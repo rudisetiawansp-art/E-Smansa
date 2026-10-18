@@ -52,6 +52,29 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.AirplaneTicket
+import androidx.compose.material.icons.automirrored.rounded.ListAlt
+import androidx.compose.material.icons.filled.ArrowCircleDown
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.Book
+import androidx.compose.material.icons.rounded.DoorBack
+import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.Fingerprint
+import androidx.compose.material.icons.rounded.Group
+import androidx.compose.material.icons.rounded.GroupAdd
+import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Mosque
+import androidx.compose.material.icons.rounded.NoteAlt
+import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.RemoveRedEye
+import androidx.compose.material.icons.rounded.School
+import androidx.compose.material.icons.rounded.TravelExplore
+import androidx.compose.material.icons.rounded.ViewTimeline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -84,6 +107,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -132,7 +156,7 @@ import java.util.TimeZone
 
 data class MenuItemData(
     val title: String,
-    val iconRes: Int,
+    val iconRes: ImageVector,
     val onClick: () -> Unit
 )
 
@@ -405,25 +429,25 @@ fun MainDashboardScreen(
     // Menu Item Definitions
     val kurikulumItems = remember {
         listOf(
-            MenuItemData("Jurnal", R.drawable.icm_jurnal) {
+            MenuItemData("Jurnal", Icons.Rounded.NoteAlt) {
                 val intent = Intent(context, JurnalActivity::class.java).apply {
                     putExtra("mode", "individu")
                 }
                 context.startActivity(intent)
             },
-            MenuItemData("Pantau", R.drawable.icm_pantau) {
+            MenuItemData("Pantau", Icons.Rounded.RemoveRedEye) {
                 context.startActivity(Intent(context, Pantau::class.java))
             },
-            MenuItemData("Jur. Kelas", R.drawable.icm_kelas) {
+            MenuItemData("Jur. Kelas", Icons.Rounded.Groups) {
                 context.startActivity(Intent(context, JurnalKelasActivity::class.java))
             },
-            MenuItemData("LMS", R.drawable.icm_lms) {
+            MenuItemData("LMS", Icons.Rounded.School) {
                 context.startActivity(Intent(context, LMS::class.java))
             },
-            MenuItemData("Jadwal", R.drawable.icm_jadwal) {
+            MenuItemData("Jadwal", Icons.Rounded.ViewTimeline) {
                 context.startActivity(Intent(context, JadwalV2::class.java))
             },
-            MenuItemData("Piket", R.drawable.icm_lobi) {
+            MenuItemData("Piket", Icons.Rounded.Group) {
                 context.startActivity(Intent(context, Piket::class.java))
             }
         )
@@ -431,22 +455,22 @@ fun MainDashboardScreen(
 
     val kesiswaanItems = remember {
         listOf(
-            MenuItemData("Siswa", R.drawable.icm_person) {
+            MenuItemData("Siswa", Icons.Rounded.Person) {
                 context.startActivity(Intent(context, Siswa::class.java))
             },
-            MenuItemData("Presensi\nSiswa", R.drawable.icm_fingger) {
+            MenuItemData("Presensi\nSiswa", Icons.Rounded.Fingerprint) {
                 context.startActivity(Intent(context, PresensiSiswa::class.java))
             },
-            MenuItemData("G. Wali", R.drawable.icm_grup) {
+            MenuItemData("G. Wali", Icons.Rounded.GroupAdd) {
                 context.startActivity(Intent(context, GWJurnal::class.java))
             },
-            MenuItemData("Izin", R.drawable.icm_metu) {
+            MenuItemData("Izin", Icons.Rounded.DoorBack) {
                 context.startActivity(Intent(context, MetuActivity::class.java))
             },
-            MenuItemData("Laporan", R.drawable.icm_lapor) {
+            MenuItemData("Laporan", Icons.Rounded.Error) {
                 context.startActivity(Intent(context, Lapor::class.java))
             },
-            MenuItemData("Ibadah", R.drawable.icm_pray) {
+            MenuItemData("Ibadah", Icons.Rounded.Mosque) {
                 context.startActivity(Intent(context, Pray::class.java))
             }
         )
@@ -454,22 +478,22 @@ fun MainDashboardScreen(
 
     val kepegawaianItems = remember(role) {
         val list = mutableListOf(
-            MenuItemData("Presensi", R.drawable.icm_fingger) {
+            MenuItemData("Presensi", Icons.Rounded.Fingerprint) {
                 context.startActivity(Intent(context, PresensiActivity::class.java))
             },
-            MenuItemData("Tendik", R.drawable.icm_jurnal) {
+            MenuItemData("Tendik", Icons.Rounded.NoteAlt) {
                 context.startActivity(Intent(context, Jurtu::class.java))
             },
-            MenuItemData("Rekap", R.drawable.icm_rekap) {
+            MenuItemData("Rekap", Icons.AutoMirrored.Rounded.ListAlt) {
                 context.startActivity(Intent(context, JurtuRekap::class.java))
             },
-            MenuItemData("SPPD", R.drawable.icm_sppd) {
+            MenuItemData("SPPD", Icons.Rounded.TravelExplore) {
                 context.startActivity(Intent(context, SPPDActivity::class.java))
             }
         )
         if (role.equals("admin", ignoreCase = true)) {
             list.add(
-                MenuItemData("Admin", R.drawable.icm_admin) {
+                MenuItemData("Admin", Icons.Rounded.AdminPanelSettings) {
                     context.startActivity(Intent(context, AdminActivity::class.java))
                 }
             )
@@ -479,13 +503,13 @@ fun MainDashboardScreen(
 
     val lainItems = remember {
         listOf(
-            MenuItemData("Jurusan", R.drawable.icm_kampus) {
+            MenuItemData("Jurusan", Icons.Rounded.School) {
                 context.startActivity(Intent(context, Jurusan::class.java))
             },
-            MenuItemData("Buku", R.drawable.icm_buku) {
+            MenuItemData("Buku", Icons.Rounded.Book) {
                 context.startActivity(Intent(context, BukuActivity::class.java))
             },
-            MenuItemData("Link", R.drawable.icm_link) {
+            MenuItemData("Link", Icons.Rounded.Link) {
                 context.startActivity(Intent(context, LInkActivity::class.java))
             }
         )
@@ -679,19 +703,12 @@ fun ExpressiveHeroHeader(
     Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
-        color = MaterialTheme.colorScheme.primary,
-        shadowElevation = 4.dp
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 0.dp
     ) {
         Box(
             modifier = Modifier
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary,
-                            MaterialTheme.colorScheme.primaryContainer
-                        )
-                    )
-                )
+                .background(MaterialTheme.colorScheme.primaryContainer)
                 .statusBarsPadding()
                 .padding(horizontal = 24.dp, vertical = 24.dp)
         ) {
@@ -791,7 +808,7 @@ fun ExpressiveHeroHeader(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.icm_person),
+                            imageVector = Icons.Filled.Person,
                             contentDescription = "Profil",
                             tint = MaterialTheme.colorScheme.onPrimary,
                             modifier = Modifier.size(28.dp)
@@ -831,13 +848,9 @@ fun KaldikAgendaCard(
         onClick = onClick,
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp,
-            pressedElevation = 3.dp
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = modifier
     ) {
         Column(
@@ -861,7 +874,7 @@ fun KaldikAgendaCard(
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
-                                painter = painterResource(id = R.drawable.icm_kalender),
+                                imageVector = Icons.Filled.CalendarMonth,
                                 contentDescription = "Kalender",
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 modifier = Modifier.size(24.dp)
@@ -893,7 +906,7 @@ fun KaldikAgendaCard(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
-                            painter = painterResource(id = R.drawable.icm_kanan),
+                            imageVector = Icons.Filled.ChevronRight,
                             contentDescription = "Buka",
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
@@ -1040,8 +1053,7 @@ fun ExpandableSectionCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         modifier = modifier
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -1096,7 +1108,7 @@ fun ExpandableSectionCard(
                 }
 
                 Icon(
-                    painter = painterResource(id = R.drawable.icm_expand),
+                    imageVector = Icons.Filled.ArrowCircleDown,
                     contentDescription = if (isExpanded) "Tutup" else "Buka",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
@@ -1176,23 +1188,19 @@ fun ExpressiveMenuCard(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(targetValue = if (isPressed) 0.95f else 1.0f)
 
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.93f else 1.0f,
-        animationSpec = spring(stiffness = 500f),
-        label = "menuScale"
-    )
-
-    ElevatedCard(
+    Card(
         onClick = item.onClick,
         interactionSource = interactionSource,
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.elevatedCardColors(
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
         ),
-        elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = 1.dp,
-            pressedElevation = 3.dp
+        // Hilangkan shadow elevation
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp
         ),
         modifier = modifier
             .fillMaxWidth()
@@ -1216,7 +1224,7 @@ fun ExpressiveMenuCard(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
-                        painter = painterResource(id = item.iconRes),
+                        imageVector = item.iconRes,
                         contentDescription = item.title,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp)
@@ -1277,7 +1285,7 @@ fun ProfileBottomSheet(
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
-                border = BorderStroke(3.dp, MaterialTheme.colorScheme.primary),
+                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
                 shadowElevation = 4.dp,
                 modifier = Modifier.size(80.dp)
             ) {
@@ -1496,102 +1504,6 @@ fun MainDashboardGuruPreview() {
             onOpenKaldik = {},
             onEditProfile = {},
             onLogout = {}
-        )
-    }
-}
-
-@Preview(name = "Dashboard Tendik (Non-Guru)", showBackground = true, showSystemUi = true)
-@Composable
-fun MainDashboardTendikPreview() {
-    AppTheme {
-        MainDashboardScreen(
-            namaLengkap = "Budi Santoso",
-            role = "user",
-            jenis = "Operator Layanan Operasional",
-            nip = "198501012010011001",
-            username = "budisantoso",
-            status = "PPPK Paruh Waktu",
-            walikelas = "",
-            eventHariIni = null,
-            eventMendatang = "Upacara Hari Guru (25 November 2026)",
-            isEventLoading = false,
-            eventError = null,
-            prefs = null,
-            onOpenKaldik = {},
-            onEditProfile = {},
-            onLogout = {}
-        )
-    }
-}
-
-@Preview(name = "Expressive Hero Header", showBackground = true)
-@Composable
-fun ExpressiveHeroHeaderPreview() {
-    AppTheme {
-        ExpressiveHeroHeader(
-            namaLengkap = "Rudi Setiawan S.P., S.Pd",
-            nip = "199208052019021004",
-            status = "ASN",
-            jenis = "Guru",
-            walikelas = "XII 1",
-            onProfileClick = {}
-        )
-    }
-}
-
-@Preview(name = "Kaldik Card Active & Upcoming", showBackground = true)
-@Composable
-fun KaldikAgendaCardPreview() {
-    AppTheme {
-        KaldikAgendaCard(
-            eventHariIni = "Asesmen Nasional Berbasis Komputer (ANBK)",
-            eventMendatang = "Libur Semester Ganjil (22 Desember 2026)",
-            isLoading = false,
-            errorMessage = null,
-            onClick = {},
-            modifier = Modifier.padding(16.dp)
-        )
-    }
-}
-
-@Preview(name = "Kaldik Card Loading", showBackground = true)
-@Composable
-fun KaldikAgendaCardLoadingPreview() {
-    AppTheme {
-        KaldikAgendaCard(
-            eventHariIni = null,
-            eventMendatang = null,
-            isLoading = true,
-            errorMessage = null,
-            onClick = {},
-            modifier = Modifier.padding(16.dp)
-        )
-    }
-}
-
-@Preview(name = "Expressive Menu Item", showBackground = true)
-@Composable
-fun ExpressiveMenuCardPreview() {
-    AppTheme {
-        Box(
-            modifier = Modifier
-                .width(120.dp)
-                .padding(16.dp)
-        ) {
-            ExpressiveMenuCard(
-                item = MenuItemData("Jurnal", R.drawable.icm_jurnal) {}
-            )
-        }
-    }
-}
-
-@Preview(name = "Logout Confirmation Dialog", showBackground = true)
-@Composable
-fun LogoutConfirmDialogPreview() {
-    AppTheme {
-        LogoutConfirmDialog(
-            onDismiss = {},
-            onConfirm = {}
         )
     }
 }

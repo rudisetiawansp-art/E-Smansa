@@ -106,4 +106,6 @@ dependencies {
     implementation("androidx.camera:camera-view:1.6.1")
     implementation("com.kizitonwose.calendar:view:2.4.0")
     implementation("com.google.code.gson:gson:2.10.1")
+
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
 }
