@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "911280084041",
+    "project_id": "esmansa-48b4b",
+    "storage_bucket": "esmansa-48b4b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:911280084041:android:47009309eb2893914c9b98",
+        "android_client_info": {
+          "package_name": "id.rudissp.esmansa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBB9EwkcgWWKBi-gLHEmtyIhOC63p--VTE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

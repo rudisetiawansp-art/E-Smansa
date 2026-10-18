@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/presensi"
+        android:enabled="true"
+        android:icon="@drawable/ic_presensi"
+        android:title="Presensi"/>
+    <item
+        android:id="@+id/rekap"
+        android:enabled="true"
+        android:icon="@drawable/ic_rekap"
+        android:title="Rekap"/>
+
+    <item
+        android:id="@+id/rekap_harian"
+        android:enabled="true"
+        android:icon="@drawable/ic_days"
+        android:title="Rekap Harian"/>
+
+    <item
+        android:id="@+id/tambahizin"
+        android:enabled="true"
+        android:icon="@drawable/ic_holydays"
+        android:title="Izin"/>
+
+    <item
+        android:id="@+id/settinghb"
+        android:enabled="true"
+        android:icon="@drawable/ic_flag"
+        android:title="HB / Libur"/>
+
+
+
+</menu>

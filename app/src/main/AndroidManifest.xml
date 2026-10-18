@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
+
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:requestLegacyExternalStorage="true"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/AppTheme"
+        tools:targetApi="31">
+        <activity
+            android:name=".kaldik.Kaldik"
+            android:exported="false" />
+        <activity
+            android:name=".jadwal.JadwalV2"
+            android:exported="false" />
+        <activity
+            android:name=".pantau.Pantau"
+            android:exported="false" />
+        <activity
+            android:name=".lms.DetailLMS"
+            android:exported="false" />
+        <activity
+            android:name=".lms.TambahTugas"
+            android:exported="false" />
+        <activity
+            android:name=".lms.LMS"
+            android:exported="false" />
+        <activity
+            android:name=".lapor.Lapor"
+            android:exported="false" />
+        <activity
+            android:name=".link.TambahLink"
+            android:exported="false" />
+        <activity
+            android:name=".link.LInkActivity"
+            android:exported="false" />
+        <activity
+            android:name=".buku.TambahBuku"
+            android:exported="false" />
+        <activity
+            android:name=".buku.BukuActivity"
+            android:exported="false" />
+        <activity
+            android:name=".jurtu.JurtuRekap"
+            android:exported="false" />
+        <activity
+            android:name=".jurtu.TambahJurtu"
+            android:exported="false" />
+        <activity
+            android:name=".jurtu.Jurtu"
+            android:exported="false" />
+        <activity
+            android:name=".piket.Piket"
+            android:exported="false" />
+        <activity
+            android:name=".pray.Pray"
+            android:exported="false" />
+        <activity
+            android:name=".gw.TambahJurnalGW"
+            android:exported="false" />
+        <activity
+            android:name=".gw.GWJurnal"
+            android:exported="false" />
+        <activity
+            android:name=".sppd.TambahSppdActivity"
+            android:exported="false" />
+        <activity
+            android:name=".sppd.SPPDActivity"
+            android:exported="false" />
+        <activity
+            android:name=".metu.TambahMetu"
+            android:exported="false" />
+        <activity
+            android:name=".metu.MetuActivity"
+            android:exported="false" />
+        <activity
+            android:name=".jurnal.JurnalKelasActivity"
+            android:exported="false" />
+        <activity
+            android:name=".admin.EditUserActivity"
+            android:exported="false" />
+        <activity
+            android:name=".admin.AdminActivity"
+            android:exported="false" />
+        <activity
+            android:name=".jurnal.TambahJurnal"
+            android:exported="false" />
+        <activity
+            android:name=".jurnal.JurnalActivity"
+            android:exported="false" />
+        <activity
+            android:name=".presensi.PresensiActivity"
+            android:exported="false" />
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false" />
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+        <activity
+            android:name=".jadwal.Full"
+            android:exported="false" />
+
+        <meta-data
+            android:name="osmdroid.basePath"
+            android:value="osmdroid" />
+        <meta-data
+            android:name="osmdroid.cachePath"
+            android:value="osmdroid/cache" />
+
+        <activity
+            android:name=".Splash"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name=".MyFirebaseMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notif" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/md_theme_primary" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <activity
+            android:name=".siswa.Siswa"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".siswa.EditSiswa"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".kampus.DBuniv"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".kampus.Jurusan"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".presensi.siswa.PresensiSiswa"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".presensi.siswa.PresensiSiswaIndividu"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+    </application>
+
+</manifest>

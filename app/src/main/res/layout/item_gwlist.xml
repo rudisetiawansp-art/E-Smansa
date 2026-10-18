@@ -1,0 +1,76 @@
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="6dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="1dp"
+    android:id="@+id/item_gwlist"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="12dp">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/item_gwlist_foto"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical"
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+            tools:src="@tools:sample/avatars" />
+
+        <LinearLayout
+            android:layout_gravity="center_vertical"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/item_gwlist_nama"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentTop="true"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:layout_toEndOf="@id/item_gwlist_foto"
+                android:text="Rudi"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/item_gwlist_wakel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/item_gwlist_nama"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:layout_toEndOf="@id/item_gwlist_foto"
+                android:text="XII 1" />
+
+            <TextView
+                android:id="@+id/item_gwlist_kelas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/item_gwlist_nama"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="8dp"
+                android:layout_toEndOf="@id/item_gwlist_foto"
+                android:text="XII 1" />
+
+        </LinearLayout>
+
+        <ImageView
+            android:layout_gravity="center_vertical"
+            android:id="@+id/item_gwlist_more"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            app:tint="?attr/colorPrimary"
+            android:src="@drawable/icm_kanan" />
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

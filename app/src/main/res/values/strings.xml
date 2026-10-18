@@ -1,0 +1,135 @@
+<resources>
+    <string name="app_name">E-Smansa</string>
+    <string name="versiapp">E-SMANSA v.3.2\n ©Kurikulum SMAN 1 Sukorejo</string>
+
+    <string-array name="months">
+        <item>Januari</item>
+        <item>Februari</item>
+        <item>Maret</item>
+        <item>April</item>
+        <item>Mei</item>
+        <item>Juni</item>
+        <item>Juli</item>
+        <item>Agustus</item>
+        <item>September</item>
+        <item>Oktober</item>
+        <item>November</item>
+        <item>Desember</item>
+    </string-array>
+
+    <string-array name="kelasnya">
+        <item>X 1</item>
+        <item>X 2</item>
+        <item>X 3</item>
+        <item>X 4</item>
+        <item>X 5</item>
+        <item>X 6</item>
+        <item>X 7</item>
+        <item>X 8</item>
+        <item>X 9</item>
+        <item>XI 1</item>
+        <item>XI 2</item>
+        <item>XI 3</item>
+        <item>XI 4</item>
+        <item>XI 5</item>
+        <item>XI 6</item>
+        <item>XI 7</item>
+        <item>XI 8</item>
+        <item>XI 9</item>
+        <item>XII 1</item>
+        <item>XII 2</item>
+        <item>XII 3</item>
+        <item>XII 4</item>
+        <item>XII 5</item>
+        <item>XII 6</item>
+        <item>XII 7</item>
+        <item>XII 8</item>
+        <item>XII 9</item>
+    </string-array>
+
+    <string-array name="mapelnya">
+        <item>Bahasa Indonesia</item>
+        <item>Bahasa Indonesia Tk Lanjut</item>
+        <item>Bahasa Inggris</item>
+        <item>Bahasa Inggris Tk Lanjut</item>
+        <item>Bahasa Jawa</item>
+        <item>Bahasa Prancis</item>
+        <item>Bimbingan &amp; Konseling</item>
+        <item>Biologi</item>
+        <item>Ekonomi</item>
+        <item>Fisika</item>
+        <item>Geografi</item>
+        <item>Informatika</item>
+        <item>Kimia</item>
+        <item>KKA</item>
+        <item>Matematika</item>
+        <item>Matematika Tk Lanjut</item>
+        <item>PA Islam dan Budi Pekerti</item>
+        <item>PA Katholik dan Budi Pekerti</item>
+        <item>PA Kristen dan Budi Pekerti</item>
+        <item>Pendidikan Pancasila</item>
+        <item>PJOK</item>
+        <item>PKWu</item>
+        <item>Sejarah</item>
+        <item>Sejarah Tk Lanjut</item>
+        <item>Seni dan Budaya</item>
+        <item>Sosiologi</item>
+    </string-array>
+
+    <string-array name="statuskepegawaiannya">
+        <item>ASN</item>
+        <item>PPPK Paruh Waktu</item>
+        <item>GTT/PTT</item>
+    </string-array>
+
+    <string-array name="jeniskepegawaiannya">
+        <item>Guru</item>
+        <item>Operator Layanan Operasional</item>
+        <item>Penata Layanan Operasional</item>
+        <item>Satpam</item>
+    </string-array>
+
+    <string-array name="sumberdana">
+        <item>Dana Pribadi</item>
+        <item>Dana BOS</item>
+        <item>Hibah</item>
+        <item>Hadiah</item>
+    </string-array>
+
+    <string-array name="jenisbuku">
+        <item>Fiksi</item>
+        <item>Non Fiksi</item>
+        <item>Referensi</item>
+        <item>Pegangan Guru</item>
+        <item>Buku Teks</item>
+    </string-array>
+
+
+    <string-array name="bentuk">
+        <item>Konseling Individu</item>
+        <item>Diskusi Kelompok</item>
+    </string-array>
+
+    <string-array name="periode">
+        <item>Semester 1 TW I</item>
+        <item>Semester 1 TW II</item>
+        <item>Semester 2 TW I</item>
+        <item>Semester 2 TW II</item>
+    </string-array>
+
+    <string-array name="rencana">
+        <item>Kuliah</item>
+        <item>Wirausaha</item>
+        <item>Sekolah Kedinasan</item>
+        <item>Kerja</item>
+        <item>Gapyear</item>
+    </string-array>
+
+    <string-array name="jenistugas">
+        <item>Penugasan</item>
+        <item>Materi</item>
+    </string-array>
+    <string name="title_activity_guru_wali">GuruWali</string>
+
+
+</resources>

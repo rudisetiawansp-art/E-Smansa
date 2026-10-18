@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/recCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="8dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/item_gwku_more"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:paddingTop="16dp"
+            android:paddingEnd="8dp"
+            android:src="@drawable/ic_more"
+            app:tint="?colorPrimary" />
+
+        <ImageView
+            android:id="@+id/item_gwku_gambar"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/item_gwku_more"
+            android:adjustViewBounds="true"
+            android:paddingVertical="16dp"
+            android:src="@drawable/fb" />
+
+        <LinearLayout
+            android:layout_toStartOf="@id/item_gwku_gambar"
+            android:id="@+id/pewarna"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+
+            <TextView
+                android:id="@+id/item_gwku_tanggal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="26 Agu 2024"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/item_gwku_nama"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rudi Setiawan S.P., S.Pd" />
+
+            <TextView
+                android:id="@+id/item_gwku_topik"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Langkah berikutnya adalah menangkap hasil dari QR Code scanning dengan menggunakan"
+                android:textStyle="italic" />
+
+        </LinearLayout>
+
+
+    </RelativeLayout>
+
+
+</com.google.android.material.card.MaterialCardView>

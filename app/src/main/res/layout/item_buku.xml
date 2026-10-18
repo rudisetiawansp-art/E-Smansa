@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:id="@+id/recbuku"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="2dp">
+
+    <ImageView
+        android:id="@+id/item_buku_more"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:paddingTop="16dp"
+        android:paddingEnd="8dp"
+        android:layout_gravity="end"
+        android:src="@drawable/ic_more"
+        app:tint="?colorPrimary" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <ImageView
+            android:adjustViewBounds="true"
+            android:id="@+id/iv_cover_buku"
+            android:layout_width="60dp"
+            android:layout_height="80dp"
+            android:scaleType="centerCrop"
+            android:background="#E0E0E0" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_judul_buku"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Judul Buku"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:id="@+id/tv_nobuku"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="No: BK-123"
+                android:layout_marginTop="4dp"
+                android:textSize="12sp" />
+
+            <TextView
+                android:id="@+id/tv_penulis"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Penulis"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/tv_stok"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Stok: 50"
+                android:textColor="#388E3C"
+                android:textStyle="bold"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
