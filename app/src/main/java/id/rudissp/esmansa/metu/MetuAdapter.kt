@@ -16,7 +16,6 @@ import com.bumptech.glide.Glide
 import com.google.android.material.card.MaterialCardView
 import id.rudissp.esmansa.AppConstants
 import id.rudissp.esmansa.R
-import id.rudissp.esmansa.jadwal.Full
 import java.io.Serializable
 
 class MetuAdapter(
@@ -71,8 +70,8 @@ class MetuAdapter(
             editor.putString("fullnya_gambar", AppConstants.BASE_URL + "fotometu/" + item.foto)
             editor.apply()
 
-            val intent = Intent(context, Full::class.java)
-            context.startActivity(intent)
+            //val intent = Intent(context, Full::class.java)
+            //context.startActivity(intent)
         }
 
 

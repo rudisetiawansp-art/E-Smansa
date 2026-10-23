@@ -2,11 +2,39 @@ package id.rudissp.esmansa.siswa
 
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.rounded.AccountCircle
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.School
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.android.volley.AuthFailureError
 import com.android.volley.Request
 import com.android.volley.toolbox.JsonArrayRequest
@@ -14,79 +42,104 @@ import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.esmansa.AppConstants
-import id.rudissp.esmansa.R
-import id.rudissp.esmansa.databinding.ActivityEditSiswaBinding
+import id.rudissp.esmansa.AppTheme
+import id.rudissp.esmansa.LoadingIndicator
 import org.json.JSONObject
 import java.net.URLEncoder
 
-class EditSiswa : AppCompatActivity() {
-    lateinit var binding: ActivityEditSiswaBinding
-    lateinit var prefs: SharedPreferences
+class EditSiswa : ComponentActivity() {
+    private lateinit var prefs: SharedPreferences
 
     private val BASE_URL = AppConstants.BASE_URL
     private val SMANIA_URL = AppConstants.SMANIA_URL
-    private var isEditMode = false
+
+    // States
+    private var isLoadingState = mutableStateOf(false)
+    private var isEditModeState = mutableStateOf(false)
+
+    private var idState = mutableStateOf("")
+    private var nisState = mutableStateOf("")
+    private var nisnState = mutableStateOf("")
+    private var namaState = mutableStateOf("")
+    private var passState = mutableStateOf("")
+    private var kelasState = mutableStateOf("")
+    private var guruWaliState = mutableStateOf("")
+    private var deviceIdState = mutableStateOf("")
+    private var editInfoState = mutableStateOf("")
+
+    private var rencanaPascaStudiState = mutableStateOf("")
+    private var jurusanImpian1State = mutableStateOf("")
+    private var jurusanImpian2State = mutableStateOf("")
+    private var kampusImpian1State = mutableStateOf("")
+    private var kampusImpian2State = mutableStateOf("")
+    private var bidangKarierState = mutableStateOf("")
+    private var mapelFavoritState = mutableStateOf("")
+    private var skillDimilikiState = mutableStateOf("")
+    private var skillDipelajariState = mutableStateOf("")
+    private var pengalamanState = mutableStateOf("")
+    private var programSekolahState = mutableStateOf("")
+
+    private val jurusanListState = mutableStateListOf<String>()
+    private val kampusListState = mutableStateListOf<String>()
+    private val programListState = mutableStateListOf<String>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         prefs = getSharedPreferences("PREFS", MODE_PRIVATE)
-        binding = ActivityEditSiswaBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        binding.progressBar.visibility = View.GONE
 
-        binding.tolbarEditsiswa.setNavigationOnClickListener {
-            finish()
-        }
-        binding.tolbarEditsiswa.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.menunya_simpan -> {
+        loadProfile()
+        intent.getStringExtra("nis")?.let { loadSiswaByNis(it) }
 
-                    saveData()
-                    true
-                }
-                else -> false
-            }
-        }
-
-        //ambildatakampus()
         ambildatajurusan()
+        ambildatakampus()
         ambilmantab()
 
-        // Sembunyikan menu update (tidak digunakan)
-        binding.tolbarEditsiswa.menu.findItem(R.id.menunya_update).isVisible = false
-
-        // Load profil siswa (data login)
-        loadProfile()
-        // Load data rencana studi berdasarkan NIS
-        loadSiswaByNis(intent.getStringExtra("nis")!!)
-
-        // Tombol simpan (floating / bottom)
-        binding.btnReset.setOnClickListener {
-            resetid()
+        setContent {
+            AppTheme {
+                EditSiswaScreen(
+                    isLoading = isLoadingState.value,
+                    isEditMode = isEditModeState.value,
+                    nama = namaState.value,
+                    nis = nisState.value,
+                    nisn = nisnState.value,
+                    kelas = kelasState.value,
+                    guruWali = guruWaliState.value,
+                    deviceId = deviceIdState.value,
+                    editInfo = editInfoState.value,
+                    rencanaPascaStudi = rencanaPascaStudiState.value,
+                    onRencanaChange = { rencanaPascaStudiState.value = it },
+                    jurusanImpian1 = jurusanImpian1State.value,
+                    onJurusan1Change = { jurusanImpian1State.value = it },
+                    jurusanImpian2 = jurusanImpian2State.value,
+                    onJurusan2Change = { jurusanImpian2State.value = it },
+                    kampusImpian1 = kampusImpian1State.value,
+                    onKampus1Change = { kampusImpian1State.value = it },
+                    kampusImpian2 = kampusImpian2State.value,
+                    onKampus2Change = { kampusImpian2State.value = it },
+                    bidangKarier = bidangKarierState.value,
+                    onBidangKarierChange = { bidangKarierState.value = it },
+                    mapelFavorit = mapelFavoritState.value,
+                    onMapelFavoritChange = { mapelFavoritState.value = it },
+                    skillDimiliki = skillDimilikiState.value,
+                    onSkillDimilikiChange = { skillDimilikiState.value = it },
+                    skillDipelajari = skillDipelajariState.value,
+                    onSkillDipelajariChange = { skillDipelajariState.value = it },
+                    pengalaman = pengalamanState.value,
+                    onPengalamanChange = { pengalamanState.value = it },
+                    programSekolah = programSekolahState.value,
+                    onProgramSekolahChange = { programSekolahState.value = it },
+                    jurusanList = jurusanListState,
+                    kampusList = kampusListState,
+                    programList = programListState,
+                    onBackClick = { finish() },
+                    onSaveClick = { saveData() },
+                    onResetDeviceId = { resetid() }
+                )
+            }
         }
     }
 
-    // ============================================
-    // Fungsi utama untuk menyimpan (insert/update)
-    // ============================================
-    private fun saveData() {
-        val siswa = collectDataFromViews()
-        if (siswa.nis.isEmpty()) {
-            Toast.makeText(this, "NIS tidak boleh kosong", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        if (isEditMode) {
-            updateSiswa(siswa)
-        } else {
-            insertSiswa(siswa)
-        }
-    }
-
-    // ============================================
-    // Load data profil siswa (dari Intent)
-    // ============================================
     private fun loadProfile() {
         val id = intent.getStringExtra("id") ?: ""
         val nama = intent.getStringExtra("nama") ?: ""
@@ -103,17 +156,16 @@ class EditSiswa : AppCompatActivity() {
             return
         }
 
-        binding.etDeviceId.setText(if (device_id == "null" || device_id.isEmpty()) "" else device_id)
-        binding.tolbarEditsiswa.title = nama
-        binding.etId.setText(id)
-        binding.etNisn.setText(nisn)
-        binding.etNis.setText(nis)
-        binding.etNama.setText(nama)
-        binding.etPass.setText(pass)
-        binding.etKelas.setText(kelas)
-        binding.etGuruWali.setText(guruwali)
-        fetchWalikelas(kelas)
+        idState.value = id
+        namaState.value = nama
+        nisState.value = nis
+        nisnState.value = nisn
+        passState.value = pass
+        kelasState.value = kelas
+        guruWaliState.value = guruwali
+        deviceIdState.value = if (device_id == "null" || device_id.isEmpty()) "" else device_id
 
+        fetchWalikelas(kelas)
     }
 
     private fun fetchWalikelas(kelas: String) {
@@ -128,28 +180,19 @@ class EditSiswa : AppCompatActivity() {
                     if (status == "success") {
                         val data = response.getJSONObject("data")
                         val walikelas = data.getString("walikelas")
-                        binding.etwalikelas.setText(walikelas)
-
-                    } else {
-
+                        guruWaliState.value = walikelas
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-
                 }
             },
             { error ->
                 error.printStackTrace()
-
             }
         )
-
         Volley.newRequestQueue(this).add(request)
     }
 
-    // ============================================
-    // GET: Load data rencana studi berdasarkan NIS
-    // ============================================
     private fun loadSiswaByNis(nis: String) {
         val url = SMANIA_URL + "android/api_siswa.php?nis=$nis"
         val request = JsonObjectRequest(
@@ -159,66 +202,78 @@ class EditSiswa : AppCompatActivity() {
                 if (status == "success") {
                     val dataObj = response.optJSONObject("data")
                     if (dataObj != null) {
-                        val siswa = parseSiswaFromJson(dataObj)
-                        fillFormWithSiswa(siswa)
-                        isEditMode = true
-                        // Toast tidak perlu ditampilkan setiap load
+                        parseSiswaFromJson(dataObj)
+                        isEditModeState.value = true
                     } else {
-                        // Data tidak ditemukan -> mode tambah baru
-                        isEditMode = false
-                        Toast.makeText(this, "Data baru, silakan isi", Toast.LENGTH_SHORT).show()
+                        isEditModeState.value = false
                     }
                 } else {
-                    // Jika status error, kemungkinan data belum ada
-                    isEditMode = false
-                    val msg = response.optString("message", "Data tidak ditemukan")
-                    Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+                    isEditModeState.value = false
                 }
             },
-            { error ->
-                // Jika gagal koneksi, asumsikan data baru
-                isEditMode = false
-                Toast.makeText(this, "Gagal memuat data: ${error.message}", Toast.LENGTH_SHORT).show()
+            { _ ->
+                isEditModeState.value = false
             }
         )
         Volley.newRequestQueue(this).add(request)
     }
 
-    // ============================================
-    // Fungsi collect data dari form
-    // ============================================
-    private fun collectDataFromViews(): datasiswa {
-        return datasiswa(
-            nis = binding.etNis.text.toString().trim(),
-            rencanaPascaStudi = binding.etRencana.text.toString().trim(),
-            jurusanImpian1 = binding.etJurusanImpian1.text.toString().trim(),
-            jurusanImpian2 = binding.etJurusanImpian2.text.toString().trim(),
-            kampusImpian1 = binding.etKampusImpian1.text.toString().trim(),
-            kampusImpian2 = binding.etKampusImpian2.text.toString().trim(),
-            bidangKarier = binding.etBidangKarier.text.toString().trim(),
-            mapelFavorit = binding.etMapelFavorit.text.toString().trim(),
-            skillDimiliki = binding.etSkillMilik.text.toString().trim(),
-            skillDipelajari = binding.etSkillPelajari.text.toString().trim(),
-            pengalaman = binding.etPengalaman.text.toString().trim(),
-            programSekolah = binding.etProgramSekolah.text.toString().trim(),
-            editedBy = prefs.getString("nama", "")
-        )
+    private fun parseSiswaFromJson(obj: JSONObject) {
+        rencanaPascaStudiState.value = obj.optString("rencana_pasca_studi", "")
+        jurusanImpian1State.value = obj.optString("jurusan_impian_1", "")
+        jurusanImpian2State.value = obj.optString("jurusan_impian_2", "")
+        kampusImpian1State.value = obj.optString("kampus_impian_1", "")
+        kampusImpian2State.value = obj.optString("kampus_impian_2", "")
+        bidangKarierState.value = obj.optString("bidang_karier", "")
+        mapelFavoritState.value = obj.optString("mapel_favorit", "")
+        skillDimilikiState.value = obj.optString("skill_dimiliki", "")
+        skillDipelajariState.value = obj.optString("skill_dipelajari", "")
+        pengalamanState.value = obj.optString("pengalaman", "")
+        programSekolahState.value = obj.optString("program_sekolah", "")
+        val editedBy = obj.optString("edited_by", "")
+        val editTime = obj.optString("edit_time", "")
+        if (editedBy.isNotEmpty() && editTime.isNotEmpty()) {
+            editInfoState.value = "Diperbarui oleh: $editedBy pada $editTime"
+        }
     }
 
-    // ============================================
-    // POST: Insert data baru
-    // ============================================
-    private fun insertSiswa(siswa: datasiswa) {
-        binding.progressBar.visibility = View.VISIBLE
-        
+    private fun saveData() {
+        if (nisState.value.isEmpty()) {
+            Toast.makeText(this, "NIS tidak boleh kosong", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val siswa = datasiswa(
+            nis = nisState.value.trim(),
+            rencanaPascaStudi = rencanaPascaStudiState.value.trim(),
+            jurusanImpian1 = jurusanImpian1State.value.trim(),
+            jurusanImpian2 = jurusanImpian2State.value.trim(),
+            kampusImpian1 = kampusImpian1State.value.trim(),
+            kampusImpian2 = kampusImpian2State.value.trim(),
+            bidangKarier = bidangKarierState.value.trim(),
+            mapelFavorit = mapelFavoritState.value.trim(),
+            skillDimiliki = skillDimilikiState.value.trim(),
+            skillDipelajari = skillDipelajariState.value.trim(),
+            pengalaman = pengalamanState.value.trim(),
+            programSekolah = programSekolahState.value.trim(),
+            editedBy = prefs.getString("namalengkap", "")
+        )
 
+        if (isEditModeState.value) {
+            updateSiswa(siswa)
+        } else {
+            insertSiswa(siswa)
+        }
+    }
+
+    private fun insertSiswa(siswa: datasiswa) {
+        isLoadingState.value = true
         val url = "$SMANIA_URL/android/api_siswa.php"
         val jsonObject = siswaToJson(siswa)
 
         val request = object : JsonObjectRequest(
             Method.POST, url, jsonObject,
             { response ->
-                binding.progressBar.visibility = View.GONE
+                isLoadingState.value = false
                 val status = response.optString("status")
                 if (status == "success") {
                     Toast.makeText(this, "Data berhasil disimpan", Toast.LENGTH_SHORT).show()
@@ -229,36 +284,27 @@ class EditSiswa : AppCompatActivity() {
                 }
             },
             { error ->
-                binding.progressBar.visibility = View.GONE
+                isLoadingState.value = false
                 Toast.makeText(this, "Error: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         ) {
-            override fun getBodyContentType(): String {
-                return "application/json; charset=utf-8"
-            }
+            override fun getBodyContentType(): String = "application/json; charset=utf-8"
         }
-
         Volley.newRequestQueue(this).add(request)
     }
 
-    // ============================================
-    // PUT: Update data berdasarkan NIS
-    // ============================================
     private fun updateSiswa(siswa: datasiswa) {
-        binding.progressBar.visibility = View.VISIBLE
-        
-
+        isLoadingState.value = true
         val url = "$SMANIA_URL/android/api_siswa.php?nis=${siswa.nis}"
         val jsonObject = siswaToJson(siswa)
 
         val request = object : JsonObjectRequest(
             Method.PUT, url, jsonObject,
             { response ->
-                binding.progressBar.visibility = View.GONE
-                
+                isLoadingState.value = false
                 val status = response.optString("status")
                 if (status == "success") {
-                    Toast.makeText(this, "Data berhasil diupdate", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Data berhasil diperbarui", Toast.LENGTH_SHORT).show()
                     finish()
                 } else {
                     val msg = response.optString("message", "Gagal update")
@@ -266,22 +312,15 @@ class EditSiswa : AppCompatActivity() {
                 }
             },
             { error ->
-                binding.progressBar.visibility = View.GONE
-                
+                isLoadingState.value = false
                 Toast.makeText(this, "Error: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         ) {
-            override fun getBodyContentType(): String {
-                return "application/json; charset=utf-8"
-            }
+            override fun getBodyContentType(): String = "application/json; charset=utf-8"
         }
-
         Volley.newRequestQueue(this).add(request)
     }
 
-    // ============================================
-    // Helper: konversi datasiswa ke JSONObject
-    // ============================================
     private fun siswaToJson(siswa: datasiswa): JSONObject {
         return JSONObject().apply {
             put("nis", siswa.nis)
@@ -296,86 +335,32 @@ class EditSiswa : AppCompatActivity() {
             siswa.skillDipelajari?.let { put("skill_dipelajari", it) }
             siswa.pengalaman?.let { put("pengalaman", it) }
             siswa.programSekolah?.let { put("program_sekolah", it) }
-            siswa.editedBy?.let { put("edited_by", prefs.getString("namalengkap", "")) }
+            siswa.editedBy?.let { put("edited_by", it) }
         }
     }
 
-    // ============================================
-    // Parse JSONObject -> datasiswa
-    // ============================================
-    private fun parseSiswaFromJson(obj: JSONObject): datasiswa {
-        return datasiswa(
-            nis = obj.optString("nis", ""),
-            rencanaPascaStudi = obj.optString("rencana_pasca_studi", ""),
-            jurusanImpian1 = obj.optString("jurusan_impian_1", ""),
-            jurusanImpian2 = obj.optString("jurusan_impian_2", ""),
-            kampusImpian1 = obj.optString("kampus_impian_1", ""),
-            kampusImpian2 = obj.optString("kampus_impian_2", ""),
-            bidangKarier = obj.optString("bidang_karier", ""),
-            mapelFavorit = obj.optString("mapel_favorit", ""),
-            skillDimiliki = obj.optString("skill_dimiliki", ""),
-            skillDipelajari = obj.optString("skill_dipelajari", ""),
-            pengalaman = obj.optString("pengalaman", ""),
-            programSekolah = obj.optString("program_sekolah", ""),
-            editedBy = obj.optString("edited_by", ""),
-            editTime = obj.optString("edit_time", "")
-        )
-    }
-
-    // ============================================
-    // Mengisi form dengan data siswa (untuk edit)
-    // ============================================
-    private fun fillFormWithSiswa(siswa: datasiswa) {
-        binding.etNis.setText(siswa.nis)
-        binding.etRencana.setText(siswa.rencanaPascaStudi)
-        binding.etJurusanImpian1.setText(siswa.jurusanImpian1)
-        binding.etJurusanImpian2.setText(siswa.jurusanImpian2)
-        binding.etKampusImpian1.setText(siswa.kampusImpian1)
-        binding.etKampusImpian2.setText(siswa.kampusImpian2)
-        binding.etBidangKarier.setText(siswa.bidangKarier)
-        binding.etMapelFavorit.setText(siswa.mapelFavorit)
-        binding.etSkillMilik.setText(siswa.skillDimiliki)
-        binding.etSkillPelajari.setText(siswa.skillDipelajari)
-        binding.etPengalaman.setText(siswa.pengalaman)
-        binding.etProgramSekolah.setText(siswa.programSekolah)
-        binding.updatesiapa.text = "Diubah oleh: " + siswa.editedBy + " pada " + siswa.editTime
-    }
-
-    // ============================================
-    // Fungsi reset device_id (jika diperlukan)
-    // ============================================
     private fun resetid() {
-        binding.progressBar.visibility = View.VISIBLE
-        
-
-        val id = binding.etId.text.toString().trim()
-        val nis = binding.etNis.text.toString().trim()
-        val nama = binding.etNama.text.toString().trim()
-        val pass = binding.etPass.text.toString().trim()
-        val kelas = binding.etKelas.text.toString().trim()
-        val guruwali = binding.etGuruWali.text.toString().trim()
-
-        val params = HashMap<String, String>()
-        params["id"] = id
-        params["nis"] = nis
-        params["nama"] = nama
-        params["pass"] = pass
-        params["kelas"] = kelas
-        params["guruwali"] = guruwali
-        params["device_id"] = ""
+        isLoadingState.value = true
+        val params = HashMap<String, String>().apply {
+            put("id", idState.value)
+            put("nis", nisState.value)
+            put("nama", namaState.value)
+            put("pass", passState.value)
+            put("kelas", kelasState.value)
+            put("guruwali", guruWaliState.value)
+            put("device_id", "")
+        }
 
         val url = "$BASE_URL/update_siswa.php"
         val request = object : StringRequest(
             Method.POST, url,
             { response ->
-                binding.progressBar.visibility = View.GONE
-                
+                isLoadingState.value = false
                 try {
                     val json = JSONObject(response)
                     if (json.getBoolean("success")) {
-                        Toast.makeText(this, "Login siswa $nama berhasil direset", Toast.LENGTH_SHORT)
-                            .show()
-                        finish()
+                        deviceIdState.value = ""
+                        Toast.makeText(this, "Login siswa ${namaState.value} berhasil direset", Toast.LENGTH_SHORT).show()
                     } else {
                         Toast.makeText(this, json.getString("message"), Toast.LENGTH_SHORT).show()
                     }
@@ -384,110 +369,62 @@ class EditSiswa : AppCompatActivity() {
                 }
             },
             { error ->
-                binding.progressBar.visibility = View.GONE
-                
+                isLoadingState.value = false
                 Toast.makeText(this, "Error: ${error.message}", Toast.LENGTH_SHORT).show()
             }
         ) {
             @Throws(AuthFailureError::class)
-            override fun getParams(): Map<String, String> {
-                return params
-            }
+            override fun getParams(): Map<String, String> = params
         }
-
         Volley.newRequestQueue(this).add(request)
     }
 
-    // ============================================
-    // Ambil data kampus (AutoComplete)
-    // ============================================
-    private fun ambildatakampus() {
-        val urlApi = AppConstants.BASE_URL + "api_universitas.php"
-        val queue = Volley.newRequestQueue(this)
-        val jsonArrayRequest = JsonArrayRequest(
-            Request.Method.GET, urlApi, null,
-            { response ->
-                val listRencanaDariDB = ArrayList<String>()
-                for (i in 0 until response.length()) {
-                    listRencanaDariDB.add(response.getString(i))
-                }
-                val adapterRencana = ArrayAdapter(
-                    this,
-                    android.R.layout.simple_dropdown_item_1line,
-                    listRencanaDariDB
-                )
-                //binding.etKampusImpian1.setAdapter(adapterRencana)
-                //binding.etKampusImpian2.setAdapter(adapterRencana)
-            },
-            { error ->
-                Toast.makeText(
-                    this,
-                    "Gagal mengambil data kampus: ${error.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        )
-        queue.add(jsonArrayRequest)
-    }
-
-    // ============================================
-    // Ambil data jurusan (AutoComplete)
-    // ============================================
     private fun ambildatajurusan() {
         val urlApi = AppConstants.BASE_URL + "api_jurusan.php"
         val queue = Volley.newRequestQueue(this)
-        val jsonArrayRequest = JsonArrayRequest(
+        val request = JsonArrayRequest(
             Request.Method.GET, urlApi, null,
             { response ->
-                val listRencanaDariDB = ArrayList<String>()
+                jurusanListState.clear()
                 for (i in 0 until response.length()) {
-                    listRencanaDariDB.add(response.getString(i))
+                    jurusanListState.add(response.getString(i))
                 }
-                val adapterRencana = ArrayAdapter(
-                    this,
-                    android.R.layout.simple_dropdown_item_1line,
-                    listRencanaDariDB
-                )
-                binding.etJurusanImpian1.setAdapter(adapterRencana)
-                binding.etJurusanImpian2.setAdapter(adapterRencana)
             },
-            { error ->
-                Toast.makeText(
-                    this,
-                    "Gagal mengambil data jurusan: ${error.message}",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+            { _ -> }
         )
-        queue.add(jsonArrayRequest)
+        queue.add(request)
     }
 
-    private fun ambilmantab(){
-            val urlApi = AppConstants.BASE_URL + "api_mantab.php"
-            val queue = Volley.newRequestQueue(this)
-            val jsonArrayRequest = JsonArrayRequest(
-                Request.Method.GET, urlApi, null,
-                { response ->
-                    val listRencanaDariDB = ArrayList<String>()
-                    for (i in 0 until response.length()) {
-                        listRencanaDariDB.add(response.getString(i))
-                    }
-                    val adapterRencana = ArrayAdapter(
-                        this,
-                        android.R.layout.simple_dropdown_item_1line,
-                        listRencanaDariDB
-                    )
-                    binding.etProgramSekolah.setAdapter(adapterRencana)
-                },
-                { error ->
-                    Toast.makeText(
-                        this,
-                        "Gagal mengambil data: ${error.message}",
-                        Toast.LENGTH_SHORT
-                    ).show()
+    private fun ambildatakampus() {
+        val urlApi = AppConstants.BASE_URL + "api_universitas.php"
+        val queue = Volley.newRequestQueue(this)
+        val request = JsonArrayRequest(
+            Request.Method.GET, urlApi, null,
+            { response ->
+                kampusListState.clear()
+                for (i in 0 until response.length()) {
+                    kampusListState.add(response.getString(i))
                 }
-            )
-            queue.add(jsonArrayRequest)
+            },
+            { _ -> }
+        )
+        queue.add(request)
+    }
+
+    private fun ambilmantab() {
+        val urlApi = AppConstants.BASE_URL + "api_mantab.php"
+        val queue = Volley.newRequestQueue(this)
+        val request = JsonArrayRequest(
+            Request.Method.GET, urlApi, null,
+            { response ->
+                programListState.clear()
+                for (i in 0 until response.length()) {
+                    programListState.add(response.getString(i))
+                }
+            },
+            { _ -> }
+        )
+        queue.add(request)
     }
 }
 
@@ -507,3 +444,592 @@ data class datasiswa(
     var editedBy: String? = null,
     var editTime: String? = null
 )
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditSiswaScreen(
+    isLoading: Boolean,
+    isEditMode: Boolean,
+    nama: String,
+    nis: String,
+    nisn: String,
+    kelas: String,
+    guruWali: String,
+    deviceId: String,
+    editInfo: String,
+    rencanaPascaStudi: String,
+    onRencanaChange: (String) -> Unit,
+    jurusanImpian1: String,
+    onJurusan1Change: (String) -> Unit,
+    jurusanImpian2: String,
+    onJurusan2Change: (String) -> Unit,
+    kampusImpian1: String,
+    onKampus1Change: (String) -> Unit,
+    kampusImpian2: String,
+    onKampus2Change: (String) -> Unit,
+    bidangKarier: String,
+    onBidangKarierChange: (String) -> Unit,
+    mapelFavorit: String,
+    onMapelFavoritChange: (String) -> Unit,
+    skillDimiliki: String,
+    onSkillDimilikiChange: (String) -> Unit,
+    skillDipelajari: String,
+    onSkillDipelajariChange: (String) -> Unit,
+    pengalaman: String,
+    onPengalamanChange: (String) -> Unit,
+    programSekolah: String,
+    onProgramSekolahChange: (String) -> Unit,
+    jurusanList: List<String>,
+    kampusList: List<String>,
+    programList: List<String>,
+    onBackClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    onResetDeviceId: () -> Unit
+) {
+    val fieldShape = RoundedCornerShape(24.dp)
+    val cardShape = RoundedCornerShape(32.dp)
+
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = if (nama.isNotBlank()) nama else "Profil Siswa",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            maxLines = 1,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        if (isEditMode) {
+                            Text(
+                                text = "Mode Edit (Data Tersedia)",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                },
+                navigationIcon = {
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "Kembali",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
+            )
+        },
+        bottomBar = {
+            Surface(
+                shadowElevation = 16.dp,
+                color = MaterialTheme.colorScheme.surface,
+                shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 20.dp)
+                        .navigationBarsPadding(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilledTonalButton(
+                        onClick = onResetDeviceId,
+                        colors = ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        ),
+                        shape = RoundedCornerShape(24.dp),
+                        contentPadding = PaddingValues(vertical = 16.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Reset ID", fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = onSaveClick,
+                        shape = RoundedCornerShape(24.dp),
+                        contentPadding = PaddingValues(vertical = 16.dp),
+                        modifier = Modifier.weight(1.5f)
+                    ) {
+                        Icon(Icons.Rounded.Check, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Simpan Data", fontWeight = FontWeight.ExtraBold)
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+
+                // Section 1: Informasi Umum Banner
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Rounded.AccountCircle, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                        }
+                    }
+                    Text(
+                        text = "Data Akademik & Sistem",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                ElevatedCard(
+                    shape = cardShape,
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(2.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = nis,
+                            onValueChange = {},
+                            label = { Text("NIS") },
+                            readOnly = true,
+                            shape = fieldShape,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledBorderColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = nisn,
+                            onValueChange = {},
+                            label = { Text("NISN") },
+                            readOnly = true,
+                            shape = fieldShape,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledBorderColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            )
+                        )
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedTextField(
+                                value = kelas,
+                                onValueChange = {},
+                                label = { Text("Kelas") },
+                                readOnly = true,
+                                shape = fieldShape,
+                                modifier = Modifier.weight(1f),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledBorderColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                                )
+                            )
+
+                            OutlinedTextField(
+                                value = guruWali,
+                                onValueChange = {},
+                                label = { Text("Wali Kelas") },
+                                readOnly = true,
+                                shape = fieldShape,
+                                modifier = Modifier.weight(1.5f),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    disabledBorderColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                                )
+                            )
+                        }
+
+                        OutlinedTextField(
+                            value = deviceId.ifEmpty { "Belum terikat perangkat" },
+                            onValueChange = {},
+                            label = { Text("Device ID Terdaftar") },
+                            readOnly = true,
+                            shape = fieldShape,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                disabledBorderColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                disabledTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            )
+                        )
+                    }
+                }
+
+                // Section 2: Rencana Studi & Karir Banner
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(Icons.Rounded.School, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                        }
+                    }
+                    Text(
+                        text = "Rencana Studi & Karier",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                ElevatedCard(
+                    shape = cardShape,
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                    ),
+                    elevation = CardDefaults.elevatedCardElevation(2.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = rencanaPascaStudi,
+                            onValueChange = onRencanaChange,
+                            label = { Text("Rencana Pasca Studi") },
+                            shape = fieldShape,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            )
+                        )
+
+                        AutocompleteTextField(
+                            value = jurusanImpian1,
+                            onValueChange = onJurusan1Change,
+                            label = "Jurusan Impian 1",
+                            suggestions = jurusanList,
+                            shape = fieldShape
+                        )
+
+                        AutocompleteTextField(
+                            value = jurusanImpian2,
+                            onValueChange = onJurusan2Change,
+                            label = "Jurusan Impian 2",
+                            suggestions = jurusanList,
+                            shape = fieldShape
+                        )
+
+                        AutocompleteTextField(
+                            value = kampusImpian1,
+                            onValueChange = onKampus1Change,
+                            label = "Kampus Impian 1",
+                            suggestions = kampusList,
+                            shape = fieldShape
+                        )
+
+                        AutocompleteTextField(
+                            value = kampusImpian2,
+                            onValueChange = onKampus2Change,
+                            label = "Kampus Impian 2",
+                            suggestions = kampusList,
+                            shape = fieldShape
+                        )
+
+                        OutlinedTextField(
+                            value = bidangKarier,
+                            onValueChange = onBidangKarierChange,
+                            label = { Text("Bidang Karier") },
+                            shape = fieldShape,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = mapelFavorit,
+                            onValueChange = onMapelFavoritChange,
+                            label = { Text("Mapel Favorit") },
+                            shape = fieldShape,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = skillDimiliki,
+                            onValueChange = onSkillDimilikiChange,
+                            label = { Text("Skill yang Dimiliki") },
+                            shape = fieldShape,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = skillDipelajari,
+                            onValueChange = onSkillDipelajariChange,
+                            label = { Text("Skill yang Ingin Dipelajari") },
+                            shape = fieldShape,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            )
+                        )
+
+                        OutlinedTextField(
+                            value = pengalaman,
+                            onValueChange = onPengalamanChange,
+                            label = { Text("Pengalaman Organisasi / Prestasi") },
+                            shape = fieldShape,
+                            modifier = Modifier.fillMaxWidth(),
+                            minLines = 3,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                            )
+                        )
+
+                        AutocompleteTextField(
+                            value = programSekolah,
+                            onValueChange = onProgramSekolahChange,
+                            label = "Program Sekolah / Mantab",
+                            suggestions = programList,
+                            shape = fieldShape
+                        )
+                    }
+                }
+
+                if (editInfo.isNotBlank()) {
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = editInfo,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(16.dp),
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(80.dp)) // Extra padding for bottom bar
+            }
+
+            // Expressive Loading Overlay
+            if (isLoading) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.3f)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(24.dp)
+                        ) {
+                            val infiniteTransition = rememberInfiniteTransition(label = "saving infinite transition")
+                            val animatedProgress = infiniteTransition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = 1f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(400, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "saving progress"
+                            )
+
+                            Surface(
+                                shape = RoundedCornerShape(32.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                shadowElevation = 12.dp,
+                                modifier = Modifier.size(96.dp)
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    LoadingIndicator(
+                                        progress = { animatedProgress.value },
+                                        modifier = Modifier.size(48.dp),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            Text(
+                                text = "Menyimpan data...",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AutocompleteTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    suggestions: List<String>,
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(16.dp)
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val filteredSuggestions = remember(value, suggestions) {
+        if (value.isBlank()) suggestions
+        else suggestions.filter { it.contains(value, ignoreCase = true) }
+    }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded && filteredSuggestions.isNotEmpty(),
+        onExpandedChange = { expanded = it },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {
+                onValueChange(it)
+                expanded = true
+            },
+            label = { Text(label) },
+            shape = shape,
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryEditable, enabled = true)
+        )
+        if (filteredSuggestions.isNotEmpty()) {
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                filteredSuggestions.forEach { suggestion ->
+                    DropdownMenuItem(
+                        text = { Text(suggestion) },
+                        onClick = {
+                            onValueChange(suggestion)
+                            expanded = false
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun EditSiswaScreenPreview() {
+    AppTheme {
+        EditSiswaScreen(
+            isLoading = false,
+            isEditMode = true,
+            nama = "Ahmad Fajar",
+            nis = "12345",
+            nisn = "0081234567",
+            kelas = "XII IPA 1",
+            guruWali = "Dra. Siti Aminah",
+            deviceId = "device-xyz-123",
+            editInfo = "Diperbarui oleh: Admin pada 2025-02-20 10:00:00",
+            rencanaPascaStudi = "Kuliah di Universitas Indonesia",
+            onRencanaChange = {},
+            jurusanImpian1 = "Teknik Informatika",
+            onJurusan1Change = {},
+            jurusanImpian2 = "Sistem Informasi",
+            onJurusan2Change = {},
+            kampusImpian1 = "Universitas Indonesia",
+            onKampus1Change = {},
+            kampusImpian2 = "Universitas Gadjah Mada",
+            onKampus2Change = {},
+            bidangKarier = "Software Engineer",
+            onMapelFavoritChange = {},
+            mapelFavorit = "Matematika & Informatika",
+            onBidangKarierChange = {},
+            skillDimiliki = "Kotlin, Java",
+            onSkillDimilikiChange = {},
+            skillDipelajari = "Jetpack Compose, AI",
+            onSkillDipelajariChange = {},
+            pengalaman = "Ketua OSIS",
+            onPengalamanChange = {},
+            programSekolah = "Olimpiade Komputer",
+            onProgramSekolahChange = {},
+            jurusanList = listOf("Teknik Informatika", "Sistem Informasi", "Kedokteran"),
+            kampusList = listOf("Universitas Indonesia", "Universitas Gadjah Mada", "ITB"),
+            programList = listOf("Olimpiade Komputer", "English Club"),
+            onBackClick = {},
+            onSaveClick = {},
+            onResetDeviceId = {}
+        )
+    }
+}

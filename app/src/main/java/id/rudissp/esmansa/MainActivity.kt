@@ -1,18 +1,29 @@
+@file:OptIn(
+    ExperimentalMaterial3Api::class
+)
+
 package id.rudissp.esmansa
 
 import android.app.NotificationManager
-import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
@@ -20,11 +31,14 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
+import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -32,90 +46,103 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.CutCornerShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.AirplaneTicket
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.ListAlt
-import androidx.compose.material.icons.filled.ArrowCircleDown
-import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
 import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.AlternateEmail
+import androidx.compose.material.icons.rounded.ArrowOutward
 import androidx.compose.material.icons.rounded.Book
+import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Class
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DoorBack
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Error
+import androidx.compose.material.icons.rounded.Event
 import androidx.compose.material.icons.rounded.Fingerprint
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.GroupAdd
 import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Mosque
 import androidx.compose.material.icons.rounded.NoteAlt
 import androidx.compose.material.icons.rounded.Person
 import androidx.compose.material.icons.rounded.RemoveRedEye
 import androidx.compose.material.icons.rounded.School
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.TravelExplore
+import androidx.compose.material.icons.rounded.VerifiedUser
 import androidx.compose.material.icons.rounded.ViewTimeline
+import androidx.compose.material.icons.rounded.Work
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
@@ -145,6 +172,7 @@ import id.rudissp.esmansa.presensi.PresensiActivity
 import id.rudissp.esmansa.presensi.siswa.PresensiSiswa
 import id.rudissp.esmansa.siswa.Siswa
 import id.rudissp.esmansa.sppd.SPPDActivity
+import kotlinx.coroutines.delay
 import java.net.URLEncoder
 import java.text.SimpleDateFormat
 import java.time.LocalDate
@@ -386,7 +414,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainDashboardScreen(
     namaLengkap: String,
@@ -406,26 +433,6 @@ fun MainDashboardScreen(
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
-
-    // Accordion Expansion State backed by SharedPreferences
-    var isKurikulumExpanded by remember {
-        mutableStateOf(prefs?.getBoolean("is_kurikulum_expanded", true) ?: true)
-    }
-    var isKesiswaanExpanded by remember {
-        mutableStateOf(prefs?.getBoolean("is_kesiswaan_expanded", false) ?: false)
-    }
-    var isKepegawaianExpanded by remember {
-        mutableStateOf(prefs?.getBoolean("is_kepegawaian_expanded", false) ?: false)
-    }
-    var isLainExpanded by remember {
-        mutableStateOf(prefs?.getBoolean("is_lain_expanded", false) ?: false)
-    }
-
-    var showProfileSheet by remember { mutableStateOf(false) }
-    var showLogoutDialog by remember { mutableStateOf(false) }
-
-    val scrollState = rememberScrollState()
-
     // Menu Item Definitions
     val kurikulumItems = remember {
         listOf(
@@ -515,317 +522,485 @@ fun MainDashboardScreen(
         )
     }
 
+    val scheme = MaterialTheme.colorScheme
+    val isGuru = jenis.equals("Guru", ignoreCase = true)
+
+    val categories: List<Pair<DashTab, List<MenuItemData>>> = buildList {
+        if (isGuru) add(DashTab.Kurikulum to kurikulumItems)
+        add(DashTab.Kesiswaan to kesiswaanItems)
+        add(DashTab.Kepegawaian to kepegawaianItems)
+        add(DashTab.Lainnya to lainItems)
+    }
+    val allEntries = categories.flatMap { (t, items) -> items.map { MenuEntry(it, t) } }
+    val tabs = listOf(DashTab.Home) + categories.map { it.first }
+
+    var tab by rememberSaveable { mutableStateOf(DashTab.fromKey(prefs?.getString("dash_tab", null))) }
+    val activeTab = if (tab == DashTab.Kurikulum && !isGuru) DashTab.Home else tab
+    var query by rememberSaveable { mutableStateOf("") }
+    var showProfileSheet by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
+    fun selectTab(target: DashTab) {
+        tab = target
+        query = ""
+        prefs?.edit { putString("dash_tab", target.key) }
+    }
+
+    BackHandler(enabled = activeTab != DashTab.Home) { selectTab(DashTab.Home) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(scheme.surface)
     ) {
-        Column(
+        AnimatedContent(
+            targetState = activeTab,
+            modifier = Modifier.fillMaxSize(),
+            transitionSpec = {
+                val forward = targetState.ordinal > initialState.ordinal
+                (fadeIn(ExpressiveMotion.effects()) +
+                        slideInHorizontally(ExpressiveMotion.spatial()) { if (forward) it / 5 else -it / 5 }) togetherWith
+                        (fadeOut(ExpressiveMotion.fastEffects()) +
+                                slideOutHorizontally(ExpressiveMotion.spatial()) { if (forward) -it / 5 else it / 5 })
+            },
+            label = "dashTab"
+        ) { current ->
+            if (current == DashTab.Home) {
+                HomePage(
+                    namaLengkap = namaLengkap,
+                    walikelas = walikelas,
+                    eventHariIni = eventHariIni,
+                    eventMendatang = eventMendatang,
+                    isEventLoading = isEventLoading,
+                    eventError = eventError,
+                    categories = categories,
+                    allEntries = allEntries,
+                    query = query,
+                    onQueryChange = { query = it },
+                    onOpenKaldik = onOpenKaldik,
+                    onOpenProfile = { showProfileSheet = true },
+                    onGoTab = { selectTab(it) }
+                )
+            } else {
+                CategoryPage(
+                    tab = current,
+                    items = categories.firstOrNull { it.first == current }?.second.orEmpty(),
+                    onBack = { selectTab(DashTab.Home) }
+                )
+            }
+        }
+
+        DashboardToolbar(
+            tabs = tabs,
+            selected = activeTab,
+            onSelect = { selectTab(it) },
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(scrollState)
-        ) {
-            // Material 3 Expressive Hero Header
-            ExpressiveHeroHeader(
-                namaLengkap = namaLengkap,
-                nip = nip,
-                status = status,
-                jenis = jenis,
-                walikelas = walikelas,
-                onProfileClick = { showProfileSheet = true }
-            )
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 16.dp)
+        )
+    }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Kaldik & Event Showcase Card
-            KaldikAgendaCard(
-                eventHariIni = eventHariIni,
-                eventMendatang = eventMendatang,
-                isLoading = isEventLoading,
-                errorMessage = eventError,
-                onClick = onOpenKaldik,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Section 1: Kurikulum (Visible if jenis == "Guru")
-            if (jenis.equals("Guru", ignoreCase = true)) {
-                ExpandableSectionCard(
-                    title = "Kurikulum",
-                    iconRes = R.drawable.icm_jurnal,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f),
-                    iconTint = MaterialTheme.colorScheme.primary,
-                    badgeCount = kurikulumItems.size,
-                    isExpanded = isKurikulumExpanded,
-                    onToggleExpand = {
-                        isKurikulumExpanded = !isKurikulumExpanded
-                        prefs?.edit { putBoolean("is_kurikulum_expanded", isKurikulumExpanded) }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                ) {
-                    MenuGrid(items = kurikulumItems)
-                }
+    if (showProfileSheet) {
+        ProfileBottomSheet(
+            namaLengkap = namaLengkap,
+            nip = nip,
+            role = role,
+            jenis = jenis,
+            username = username,
+            status = status,
+            walikelas = walikelas,
+            onDismiss = { showProfileSheet = false },
+            onEditProfile = {
+                showProfileSheet = false
+                onEditProfile()
+            },
+            onPromptLogout = {
+                showProfileSheet = false
+                showLogoutDialog = true
             }
+        )
+    }
 
-            // Section 2: Kesiswaan
-            ExpandableSectionCard(
-                title = "Kesiswaan",
-                iconRes = R.drawable.icm_person,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f),
-                iconTint = MaterialTheme.colorScheme.secondary,
-                badgeCount = kesiswaanItems.size,
-                isExpanded = isKesiswaanExpanded,
-                onToggleExpand = {
-                    isKesiswaanExpanded = !isKesiswaanExpanded
-                    prefs?.edit { putBoolean("is_kesiswaan_expanded", isKesiswaanExpanded) }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-            ) {
-                MenuGrid(items = kesiswaanItems)
+    if (showLogoutDialog) {
+        LogoutConfirmDialog(
+            onDismiss = { showLogoutDialog = false },
+            onConfirm = {
+                showLogoutDialog = false
+                onLogout()
             }
-
-            // Section 3: Tendik & Kepegawaian
-            ExpandableSectionCard(
-                title = "Tendik & Kepegawaian",
-                iconRes = R.drawable.icm_fingger,
-                containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.25f),
-                iconTint = MaterialTheme.colorScheme.tertiary,
-                badgeCount = kepegawaianItems.size,
-                isExpanded = isKepegawaianExpanded,
-                onToggleExpand = {
-                    isKepegawaianExpanded = !isKepegawaianExpanded
-                    prefs?.edit { putBoolean("is_kepegawaian_expanded", isKepegawaianExpanded) }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-            ) {
-                MenuGrid(items = kepegawaianItems)
-            }
-
-            // Section 4: Lain - Lain
-            ExpandableSectionCard(
-                title = "Lain - Lain",
-                iconRes = R.drawable.icm_kampus,
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                iconTint = MaterialTheme.colorScheme.primary,
-                badgeCount = lainItems.size,
-                isExpanded = isLainExpanded,
-                onToggleExpand = {
-                    isLainExpanded = !isLainExpanded
-                    prefs?.edit { putBoolean("is_lain_expanded", isLainExpanded) }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp)
-            ) {
-                MenuGrid(items = lainItems)
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Footer Section
-            ExpressiveFooter(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(bottom = 20.dp)
-            )
-        }
-
-        // Material 3 Expressive Profile Bottom Sheet
-        if (showProfileSheet) {
-            ProfileBottomSheet(
-                namaLengkap = namaLengkap,
-                nip = nip,
-                role = role,
-                jenis = jenis,
-                username = username,
-                status = status,
-                walikelas = walikelas,
-                onDismiss = { showProfileSheet = false },
-                onEditProfile = {
-                    showProfileSheet = false
-                    onEditProfile()
-                },
-                onPromptLogout = {
-                    showProfileSheet = false
-                    showLogoutDialog = true
-                }
-            )
-        }
-
-        // Confirmation Dialog for Logout
-        if (showLogoutDialog) {
-            LogoutConfirmDialog(
-                onDismiss = { showLogoutDialog = false },
-                onConfirm = {
-                    showLogoutDialog = false
-                    onLogout()
-                }
-            )
-        }
+        )
     }
 }
 
-/**
- * Material 3 Expressive Hero Header:
- * Dynamic Greeting, Bold Display Name, NIP / Role / Walikelas Badges, Expressive Avatar Button
- */
-@OptIn(ExperimentalLayoutApi::class)
+// =====================================================================
+//  MODEL NAVIGASI
+// =====================================================================
+
+private enum class DashTab(
+    val key: String,
+    val label: String,
+    val title: String,
+    val icon: ImageVector
+) {
+    Home("home", "Beranda", "Beranda", Icons.Rounded.Home),
+    Kurikulum("kurikulum", "Kurikulum", "Kurikulum", Icons.AutoMirrored.Rounded.MenuBook),
+    Kesiswaan("kesiswaan", "Kesiswaan", "Kesiswaan", Icons.Rounded.Groups),
+    Kepegawaian("kepegawaian", "Pegawai", "Tendik & Kepegawaian", Icons.Rounded.Fingerprint),
+    Lainnya("lainnya", "Lainnya", "Lain-lain", Icons.Rounded.Category);
+
+    companion object {
+        fun fromKey(key: String?): DashTab = entries.firstOrNull { it.key == key } ?: Home
+    }
+}
+
+private data class MenuEntry(val item: MenuItemData, val tab: DashTab)
+
+private data class CategoryStyle(
+    val fill: Color,
+    val onFill: Color,
+    val container: Color,
+    val onContainer: Color
+)
+
 @Composable
-fun ExpressiveHeroHeader(
-    namaLengkap: String,
-    nip: String,
-    status: String,
-    jenis: String,
-    walikelas: String,
-    onProfileClick: () -> Unit,
+private fun DashTab.style(): CategoryStyle {
+    val s = MaterialTheme.colorScheme
+    return when (this) {
+        DashTab.Home, DashTab.Kurikulum ->
+            CategoryStyle(s.primary, s.onPrimary, s.primaryContainer, s.onPrimaryContainer)
+        DashTab.Kesiswaan ->
+            CategoryStyle(s.secondary, s.onSecondary, s.secondaryContainer, s.onSecondaryContainer)
+        DashTab.Kepegawaian ->
+            CategoryStyle(s.tertiary, s.onTertiary, s.tertiaryContainer, s.onTertiaryContainer)
+        DashTab.Lainnya ->
+            CategoryStyle(s.inverseSurface, s.inverseOnSurface, s.surfaceContainerHighest, s.onSurface)
+    }
+}
+
+/** Deskripsi singkat tiap menu (hanya untuk tampilan; ubah sesuai kebutuhan). */
+private fun menuDescription(title: String): String = when (title) {
+    "Jurnal" -> "Jurnal mengajar harian"
+    "Pantau" -> "Pantau kegiatan belajar"
+    "Jur. Kelas" -> "Jurnal per kelas"
+    "LMS" -> "Pembelajaran daring"
+    "Jadwal" -> "Jadwal mengajar"
+    "Piket" -> "Guru piket hari ini"
+    "Siswa" -> "Data dan profil siswa"
+    "Presensi\nSiswa" -> "Catat kehadiran kelas"
+    "G. Wali" -> "Jurnal guru wali"
+    "Izin" -> "Izin keluar siswa"
+    "Laporan" -> "Laporan kejadian"
+    "Ibadah" -> "Pantau ibadah siswa"
+    "Presensi" -> "Presensi pegawai"
+    "Tendik" -> "Jurnal tenaga kependidikan"
+    "Rekap" -> "Rekap kehadiran"
+    "SPPD" -> "Perjalanan dinas"
+    "Admin" -> "Pengelolaan pengguna"
+    "Jurusan" -> "Info jurusan kampus"
+    "Buku" -> "Perpustakaan"
+    "Link" -> "Tautan penting"
+    else -> ""
+}
+
+// =====================================================================
+//  PRESS MORPH — sudut berubah bentuk saat ditekan
+// =====================================================================
+
+@Composable
+private fun rememberPressMorph(interaction: MutableInteractionSource): Float {
+    val pressed by interaction.collectIsPressedAsState()
+    val t by animateFloatAsState(
+        targetValue = if (pressed) 1f else 0f,
+        animationSpec = ExpressiveMotion.fastSpatial(),
+        label = "pressMorph"
+    )
+    return t
+}
+
+private fun morphShape(
+    t: Float,
+    topStart: Dp,
+    topEnd: Dp,
+    bottomEnd: Dp,
+    bottomStart: Dp,
+    pressed: Dp = 16.dp
+) = RoundedCornerShape(
+    topStart = lerp(topStart, pressed, t).coerceAtLeast(0.dp),
+    topEnd = lerp(topEnd, pressed, t).coerceAtLeast(0.dp),
+    bottomEnd = lerp(bottomEnd, pressed, t).coerceAtLeast(0.dp),
+    bottomStart = lerp(bottomStart, pressed, t).coerceAtLeast(0.dp)
+)
+
+// =====================================================================
+//  FLOATING TOOLBAR
+// =====================================================================
+
+@Composable
+private fun DashboardToolbar(
+    tabs: List<DashTab>,
+    selected: DashTab,
+    onSelect: (DashTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val currentHour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
-    val greeting = remember(currentHour) {
-        when (currentHour) {
-            in 4..10 -> "Selamat Pagi 🌅"
-            in 11..14 -> "Selamat Siang ☀️"
-            in 15..17 -> "Selamat Sore 🌤️"
-            else -> "Selamat Malam 🌙"
-        }
-    }
-
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 0.dp
+        modifier = modifier
+            .padding(horizontal = 24.dp)
+            .fillMaxWidth(),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shadowElevation = 4.dp
     ) {
-        Box(
+        Row(
             modifier = Modifier
-                .background(MaterialTheme.colorScheme.primaryContainer)
-                .statusBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 24.dp)
+                .padding(horizontal = 8.dp, vertical = 8.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = greeting,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.85f),
-                        fontWeight = FontWeight.Medium
-                    )
-
-                    Text(
-                        text = namaLengkap.ifBlank { "Pengguna E-Smansa" },
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        fontWeight = FontWeight.ExtraBold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Pill Badges Row
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        if (nip.isNotBlank() && nip != "-") {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = Color.White.copy(alpha = 0.20f)
-                            ) {
-                                Text(
-                                    text = "NIP. $nip",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontWeight = FontWeight.SemiBold,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        if (walikelas.isNotBlank() && walikelas != "XXXX") {
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = MaterialTheme.colorScheme.secondaryContainer
-                            ) {
-                                Text(
-                                    text = "Wali Kelas: $walikelas",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-
-                        if (status.isNotBlank() || jenis.isNotBlank()) {
-                            val roleText = listOf(status, jenis).filter { it.isNotBlank() }.joinToString(" • ")
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = Color.White.copy(alpha = 0.15f)
-                            ) {
-                                Text(
-                                    text = roleText,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Profile Avatar Button (Expressive circular ring)
-                Surface(
-                    onClick = onProfileClick,
-                    shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.22f),
-                    border = BorderStroke(2.5.dp, MaterialTheme.colorScheme.onPrimary),
-                    shadowElevation = 3.dp,
-                    modifier = Modifier.size(54.dp)
-                ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Person,
-                            contentDescription = "Profil",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                }
+            tabs.forEach { t ->
+                ToolbarTab(tab = t, selected = t == selected, onClick = { onSelect(t) })
             }
         }
     }
 }
 
-/**
- * Kaldik Agenda Widget:
- * Displays active and upcoming events with real-time status pills and an interactive shortcut to Kaldik.
- */
 @Composable
-fun KaldikAgendaCard(
+private fun ToolbarTab(tab: DashTab, selected: Boolean, onClick: () -> Unit) {
+    val scheme = MaterialTheme.colorScheme
+    val bg by animateColorAsState(
+        targetValue = if (selected) scheme.primary else Color.Transparent,
+        animationSpec = ExpressiveMotion.effects(),
+        label = "tabBg"
+    )
+    val fg by animateColorAsState(
+        targetValue = if (selected) scheme.onPrimary else scheme.onSurface,
+        animationSpec = ExpressiveMotion.effects(),
+        label = "tabFg"
+    )
+    Row(
+        modifier = Modifier
+            .height(48.dp)
+            .clip(CircleShape)
+            .background(bg)
+            .clickable(role = Role.Tab, onClick = onClick)
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = tab.icon,
+            contentDescription = tab.label,
+            tint = fg,
+            modifier = Modifier.size(24.dp)
+        )
+        AnimatedVisibility(
+            visible = selected,
+            enter = expandHorizontally(ExpressiveMotion.size()) + fadeIn(ExpressiveMotion.effects()),
+            exit = shrinkHorizontally(ExpressiveMotion.size()) + fadeOut(ExpressiveMotion.fastEffects())
+        ) {
+            Text(
+                text = tab.label,
+                color = fg,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+    }
+}
+
+// =====================================================================
+//  BERANDA
+// =====================================================================
+
+@Composable
+private fun HomePage(
+    namaLengkap: String,
+    walikelas: String,
+    eventHariIni: String?,
+    eventMendatang: String?,
+    isEventLoading: Boolean,
+    eventError: String?,
+    categories: List<Pair<DashTab, List<MenuItemData>>>,
+    allEntries: List<MenuEntry>,
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onOpenKaldik: () -> Unit,
+    onOpenProfile: () -> Unit,
+    onGoTab: (DashTab) -> Unit
+) {
+    val scheme = MaterialTheme.colorScheme
+    val greeting = remember {
+        when (Calendar.getInstance().get(Calendar.HOUR_OF_DAY)) {
+            in 4..10 -> "Selamat pagi"
+            in 11..14 -> "Selamat siang"
+            in 15..17 -> "Selamat sore"
+            else -> "Selamat malam"
+        }
+    }
+
+    val shortcutTitles = listOf("Jurnal", "Presensi", "Jadwal", "LMS", "Piket")
+    val shortcuts = shortcutTitles
+        .mapNotNull { t -> allEntries.firstOrNull { it.item.title == t } }
+        .ifEmpty { allEntries.take(5) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .statusBarsPadding(),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        // Baris atas: avatar + sapaan
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 12.dp)
+                .staggeredEntrance(0),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ProfileAvatarButton(namaLengkap = namaLengkap, onClick = onOpenProfile)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = greeting,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = scheme.onSurfaceVariant
+                )
+                Text(
+                    text = namaLengkap.ifBlank { "Pengguna E-Smansa" },
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            if (walikelas.isNotBlank() && walikelas != "XXXX") {
+                Surface(shape = CircleShape, color = scheme.secondaryContainer) {
+                    Text(
+                        text = "Wali $walikelas",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = scheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+            }
+        }
+
+        // Kolom cari menu
+        TextField(
+            value = query,
+            onValueChange = onQueryChange,
+            singleLine = true,
+            placeholder = { Text("Cari menu: jurnal, presensi, SPPD") },
+            leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+            trailingIcon = {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = { onQueryChange("") }) {
+                        Icon(Icons.Rounded.Close, contentDescription = "Hapus")
+                    }
+                }
+            },
+            shape = CircleShape,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = scheme.surfaceContainerHigh,
+                unfocusedContainerColor = scheme.surfaceContainer,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
+                errorIndicatorColor = Color.Transparent
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .staggeredEntrance(1)
+        )
+
+        AnimatedContent(
+            targetState = query.isNotBlank(),
+            transitionSpec = {
+                (fadeIn(ExpressiveMotion.effects()) +
+                        scaleIn(initialScale = 0.96f, animationSpec = ExpressiveMotion.spatial())) togetherWith
+                        fadeOut(ExpressiveMotion.fastEffects())
+            },
+            label = "searchSwitch"
+        ) { searching ->
+            if (searching) {
+                SearchResults(query = query.trim(), entries = allEntries)
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    TodayHeroCard(
+                        eventHariIni = eventHariIni,
+                        eventMendatang = eventMendatang,
+                        isLoading = isEventLoading,
+                        errorMessage = eventError,
+                        onClick = onOpenKaldik,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .staggeredEntrance(2)
+                    )
+
+                    if (shortcuts.isNotEmpty()) {
+                        SectionLabel("Pintasan", Modifier.staggeredEntrance(3))
+                        ShortcutCarousel(
+                            entries = shortcuts,
+                            modifier = Modifier.staggeredEntrance(4)
+                        )
+                    }
+
+                    SectionLabel("Kategori", Modifier.staggeredEntrance(5))
+                    CategoryBento(
+                        categories = categories,
+                        onGoTab = onGoTab,
+                        modifier = Modifier.padding(horizontal = 16.dp)
+                    )
+
+                    ExpressiveFooter(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                            .staggeredEntrance(9)
+                    )
+                }
+            }
+        }
+
+        BottomToolbarSpace()
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier.padding(horizontal = 20.dp)
+    )
+}
+
+/** Ruang kosong di bawah supaya konten tidak tertutup floating toolbar. */
+@Composable
+private fun BottomToolbarSpace() {
+    Box(modifier = Modifier.navigationBarsPadding()) {
+        Spacer(modifier = Modifier.height(96.dp))
+    }
+}
+
+// ---------- Hero tanggal + agenda ----------
+
+private sealed interface AgendaState {
+    data object Loading : AgendaState
+    data class Error(val message: String) : AgendaState
+    data object Empty : AgendaState
+    data class Data(val today: String?, val upcoming: String?) : AgendaState
+}
+
+@Composable
+private fun TodayHeroCard(
     eventHariIni: String?,
     eventMendatang: String?,
     isLoading: Boolean,
@@ -833,189 +1008,168 @@ fun KaldikAgendaCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
+    val scheme = MaterialTheme.colorScheme
+    val state: AgendaState = when {
+        isLoading -> AgendaState.Loading
+        errorMessage != null -> AgendaState.Error(errorMessage)
+        eventHariIni == null && eventMendatang == null -> AgendaState.Empty
+        else -> AgendaState.Data(eventHariIni, eventMendatang)
+    }
+
+    val today = remember { LocalDate.now() }
+    val idLocale = remember { Locale.forLanguageTag("id-ID") }
+    val dayName = remember { today.format(DateTimeFormatter.ofPattern("EEEE", idLocale)) }
+    val monthYear = remember { today.format(DateTimeFormatter.ofPattern("MMMM yyyy", idLocale)) }
+
+    val interaction = remember { MutableInteractionSource() }
+    val t = rememberPressMorph(interaction)
+
+    val infinite = rememberInfiniteTransition(label = "hero")
+    val spin by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(60_000, easing = LinearEasing)),
+        label = "heroSpin"
+    )
+    val pulse by infinite.animateFloat(
+        initialValue = 0.25f,
         targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
+        animationSpec = infiniteRepeatable(tween(800, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        label = "heroPulse"
     )
 
     Card(
         onClick = onClick,
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        modifier = modifier
+        interactionSource = interaction,
+        shape = morphShape(t, 40.dp, 40.dp, 40.dp, 14.dp, pressed = 20.dp),
+        colors = CardDefaults.cardColors(containerColor = scheme.primary, contentColor = scheme.onPrimary),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
+        modifier = modifier.graphicsLayer {
+            val s = 1f - 0.02f * t
+            scaleX = s
+            scaleY = s
+        }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(18.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(44.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Filled.CalendarMonth,
-                                contentDescription = "Kalender",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(24.dp)
+        Box {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = 60.dp, y = (-60).dp)
+                    .size(200.dp)
+                    .graphicsLayer { rotationZ = spin }
+                    .background(
+                        color = scheme.onPrimary.copy(alpha = 0.14f),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+            )
+
+            Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "${today.dayOfMonth}",
+                        fontSize = 68.sp,
+                        lineHeight = 64.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = scheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.padding(bottom = 6.dp)) {
+                        Text(
+                            text = dayName,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = scheme.onPrimary
+                        )
+                        Text(
+                            text = monthYear,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = scheme.onPrimary.copy(alpha = 0.85f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Surface(shape = CircleShape, color = scheme.onPrimary, contentColor = scheme.primary) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .graphicsLayer { alpha = pulse }
+                                    .background(scheme.primary, CircleShape)
+                            )
+                            Text(
+                                text = "Hari ini",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold
                             )
                         }
                     }
-
-                    Spacer(modifier = Modifier.width(14.dp))
-
-                    Column {
-                        Text(
-                            text = "Kaldik SMAN 1 Sukorejo",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Ketuk untuk melihat agenda lengkap",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
 
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Filled.ChevronRight,
-                            contentDescription = "Buka",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-            }
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(14.dp))
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            Spacer(modifier = Modifier.height(12.dp))
-
-            when {
-                isLoading -> {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Memuat agenda kalender...",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-                errorMessage != null -> {
-                    Text(
-                        text = errorMessage,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-                eventHariIni == null && eventMendatang == null -> {
-                    Text(
-                        text = "Tidak ada agenda terdekat dalam waktu dekat",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                else -> {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        eventHariIni?.let { event ->
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .graphicsLayer { alpha = pulseAlpha }
-                                            .background(
-                                                color = MaterialTheme.colorScheme.primary,
-                                                shape = CircleShape
-                                            )
-                                    )
-                                    Text(
-                                        text = "Hari Ini:",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Text(
-                                        text = event,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
+                AnimatedContent(
+                    targetState = state,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(ExpressiveMotion.size()),
+                    transitionSpec = {
+                        (fadeIn(ExpressiveMotion.effects()) +
+                                scaleIn(initialScale = 0.94f, animationSpec = ExpressiveMotion.spatial())) togetherWith
+                                fadeOut(ExpressiveMotion.fastEffects())
+                    },
+                    label = "heroContent"
+                ) { s ->
+                    when (s) {
+                        AgendaState.Loading -> Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = scheme.onPrimary,
+                                strokeWidth = 2.5.dp
+                            )
+                            Text("Memuat agenda kalender…", style = MaterialTheme.typography.bodyMedium)
                         }
 
-                        eventMendatang?.let { event ->
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.25f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
+                        is AgendaState.Error -> Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Rounded.Error, contentDescription = null, modifier = Modifier.size(20.dp))
+                            Text(s.message, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                        }
+
+                        AgendaState.Empty -> Text(
+                            text = "Belum ada agenda terdekat",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+
+                        is AgendaState.Data -> Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Text(
+                                text = s.today ?: "Tidak ada agenda hari ini",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            s.upcoming?.let {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
+                                    Icon(Icons.Rounded.Event, contentDescription = null, modifier = Modifier.size(18.dp))
                                     Text(
-                                        text = "Mendatang:",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.secondary
-                                    )
-                                    Text(
-                                        text = event,
+                                        text = "Mendatang: $it",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier.weight(1f),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
+                                    Icon(Icons.Rounded.ChevronRight, contentDescription = "Buka Kaldik", modifier = Modifier.size(18.dp))
                                 }
                             }
                         }
@@ -1026,233 +1180,532 @@ fun KaldikAgendaCard(
     }
 }
 
-/**
- * Expandable Section Accordion Card:
- * Smooth animated expand/collapse, category badge, rotated chevron, and responsive menu grid.
- */
+// ---------- Carousel pintasan ----------
+
 @Composable
-fun ExpandableSectionCard(
-    title: String,
-    iconRes: Int,
-    containerColor: Color,
-    iconTint: Color,
-    badgeCount: Int,
-    isExpanded: Boolean,
-    onToggleExpand: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
-) {
-    val rotationAngle by animateFloatAsState(
-        targetValue = if (isExpanded) 0f else -90f,
-        animationSpec = spring(stiffness = 400f),
-        label = "rotation"
-    )
+private fun ShortcutCarousel(entries: List<MenuEntry>, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
 
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+    LazyRow(
         modifier = modifier
+            .fillMaxWidth()
+            .height(132.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // Header Row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onToggleExpand)
-                    .padding(horizontal = 18.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = containerColor,
-                        modifier = Modifier.size(38.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                painter = painterResource(id = iconRes),
-                                contentDescription = title,
-                                tint = iconTint,
-                                modifier = Modifier.size(22.dp)
-                            )
-                        }
-                    }
-
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHighest
-                    ) {
-                        Text(
-                            text = "$badgeCount",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                    }
-                }
-
-                Icon(
-                    imageVector = Icons.Filled.ArrowCircleDown,
-                    contentDescription = if (isExpanded) "Tutup" else "Buka",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .graphicsLayer { rotationZ = rotationAngle }
-                )
-            }
-
-            // Expandable Grid Body
-            AnimatedVisibility(
-                visible = isExpanded,
-                enter = fadeIn(animationSpec = tween(200)) + expandVertically(
-                    animationSpec = spring(stiffness = 400f)
+        items(entries) { entry -> // Menggunakan items biasa, index tidak lagi diperlukan untuk shape
+            Card(
+                onClick = entry.item.onClick,
+                shape = RoundedCornerShape(24.dp), // Sudut membulat kartu diseragamkan
+                colors = CardDefaults.cardColors(
+                    containerColor = scheme.surfaceContainerHigh, // Warna background kartu diseragamkan
+                    contentColor = scheme.onSurface
                 ),
-                exit = fadeOut(animationSpec = tween(150)) + shrinkVertically(
-                    animationSpec = spring(stiffness = 400f)
-                )
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                modifier = Modifier
+                    .width(140.dp)
+                    .fillMaxHeight()
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                        .fillMaxSize()
+                        .padding(14.dp),
+                    verticalArrangement = Arrangement.SpaceBetween
                 ) {
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-                        modifier = Modifier.padding(bottom = 12.dp)
+                    Surface(
+                        shape = RoundedCornerShape(16.dp), // Bentuk wadah ikon diseragamkan
+                        color = scheme.primary, // Warna wadah ikon diseragamkan
+                        modifier = Modifier.size(52.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = entry.item.iconRes,
+                                contentDescription = null,
+                                tint = scheme.onPrimary, // Warna ikon diseragamkan
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                    }
+                    Text(
+                        text = entry.item.title.replace("\n", " "),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        softWrap = false
                     )
-                    content()
                 }
             }
         }
     }
 }
 
-/**
- * 3-Column Menu Grid for Category Items
- */
+// ---------- Bento kategori ----------
+
 @Composable
-fun MenuGrid(
-    items: List<MenuItemData>,
+private fun CategoryBento(
+    categories: List<Pair<DashTab, List<MenuItemData>>>,
+    onGoTab: (DashTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val rows = items.chunked(3)
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        for (row in rows) {
+    // bentuk sudut asimetris tiap tile: topStart, topEnd, bottomEnd, bottomStart
+    val corners = listOf(
+        listOf(40, 40, 40, 40),
+        listOf(40, 40, 40, 40),
+        listOf(40, 40, 40, 40),
+        listOf(40, 40, 40, 40)
+    )
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        categories.chunked(2).forEachIndexed { rowIndex, row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                for (item in row) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        ExpressiveMenuCard(item = item)
-                    }
+                row.forEachIndexed { col, (tab, items) ->
+                    val flat = rowIndex * 2 + col
+                    BentoTile(
+                        tab = tab,
+                        count = items.size,
+                        shapeIndex = flat + 2,
+                        corner = corners[flat % corners.size],
+                        onClick = { onGoTab(tab) },
+                        modifier = Modifier
+                            .weight(1f)
+                            .staggeredEntrance(6 + flat)
+                    )
                 }
-                // Fill blank spaces if the row has fewer than 3 items
-                if (row.size < 3) {
-                    for (i in 0 until (3 - row.size)) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
+                if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
             }
         }
     }
 }
 
-/**
- * Expressive Menu Card:
- * Tactile spring scale animation, rounded container, distinct icon badge, clear multi-line label.
- */
 @Composable
-fun ExpressiveMenuCard(
-    item: MenuItemData,
+private fun BentoTile(
+    tab: DashTab,
+    count: Int,
+    shapeIndex: Int,
+    corner: List<Int>,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(targetValue = if (isPressed) 0.95f else 1.0f)
+    val style = tab.style()
+    val interaction = remember { MutableInteractionSource() }
+    val t = rememberPressMorph(interaction)
+
+    Card(
+        onClick = onClick,
+        interactionSource = interaction,
+        shape = morphShape(t, corner[0].dp, corner[1].dp, corner[2].dp, corner[3].dp),
+        colors = CardDefaults.cardColors(containerColor = style.container, contentColor = style.onContainer),
+        modifier = modifier.height(120.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Surface(
+                shape = expressiveShape(shapeIndex),
+                color = style.fill,
+                modifier = Modifier.size(42.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = tab.icon,
+                        contentDescription = null,
+                        tint = style.onFill,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+            Column {
+                Text(
+                    text = tab.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "$count menu",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = style.onContainer.copy(alpha = 0.8f)
+                )
+            }
+        }
+    }
+}
+
+// ---------- Hasil pencarian ----------
+
+@Composable
+private fun SearchResults(query: String, entries: List<MenuEntry>) {
+    val results = entries.filter {
+        it.item.title.contains(query, ignoreCase = true) ||
+                menuDescription(it.item.title).contains(query, ignoreCase = true)
+    }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        if (results.isEmpty()) {
+            Text(
+                text = "Menu tidak ditemukan",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 32.dp)
+            )
+        } else {
+            results.forEachIndexed { i, entry ->
+                val style = entry.tab.style()
+                MenuListRow(
+                    item = entry.item,
+                    index = i,
+                    count = results.size,
+                    style = style,
+                    modifier = Modifier.staggeredEntrance(i, delayPerItemMs = 30L),
+                    trailing = {
+                        Surface(shape = CircleShape, color = style.container) {
+                            Text(
+                                text = entry.tab.label,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = style.onContainer,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
+                )
+            }
+        }
+    }
+}
+
+// =====================================================================
+//  HALAMAN KATEGORI
+// =====================================================================
+
+@Composable
+private fun CategoryPage(
+    tab: DashTab,
+    items: List<MenuItemData>,
+    onBack: () -> Unit
+) {
+    val style = tab.style()
+    val spin by rememberInfiniteTransition(label = "cat").animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(70_000, easing = LinearEasing)),
+        label = "catSpin"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+    ) {
+        Surface(
+            shape = RoundedCornerShape(bottomStart = 44.dp, bottomEnd = 44.dp),
+            color = style.fill,
+            contentColor = style.onFill,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Box {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = 70.dp, y = (-40).dp)
+                        .size(220.dp)
+                        .graphicsLayer { rotationZ = spin }
+                        .background(
+                            color = style.onFill.copy(alpha = 0.16f),
+                            shape = RoundedCornerShape(32.dp)
+                        )
+                )
+                Column(
+                    // PERUBAHAN: Padding diperbesar agar header tidak terasa kosong
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .padding(horizontal = 24.dp, vertical = 28.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable(onClick = onBack)
+                            .padding(end = 16.dp, top = 8.dp, bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Rounded.ArrowBack,
+                            contentDescription = "Kembali",
+                            modifier = Modifier.size(24.dp) // PERUBAHAN: Ukuran ikon disamakan
+                        )
+                        Text(
+                            "Beranda",
+                            // PERUBAHAN: Diperbesar dari labelLarge menjadi titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(28.dp))
+                    Text(
+                        text = tab.title,
+                        // PERUBAHAN: Menggunakan displaySmall agar judul kategori lebih tegas
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Surface(shape = CircleShape, color = style.onFill, contentColor = style.fill) {
+                        Text(
+                            text = "${items.size} Menu Tersedia", // PERUBAHAN: Teks diperpanjang agar lebih proporsional
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            items.forEachIndexed { i, item ->
+                MenuListRow(
+                    item = item,
+                    index = i,
+                    count = items.size,
+                    style = style,
+                    modifier = Modifier.staggeredEntrance(i + 1)
+                )
+            }
+        }
+
+        BottomToolbarSpace()
+    }
+}
+
+/** Baris menu bergaya daftar "grouped": ujung bersudut besar, tengah bersudut kecil. */
+@Composable
+private fun MenuListRow(
+    item: MenuItemData,
+    index: Int,
+    count: Int,
+    style: CategoryStyle,
+    modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null
+) {
+    val scheme = MaterialTheme.colorScheme
+    val interaction = remember { MutableInteractionSource() }
+    val t = rememberPressMorph(interaction)
+    val top = if (index == 0) 30.dp else 8.dp
+    val bottom = if (index == count - 1) 30.dp else 8.dp
 
     Card(
         onClick = item.onClick,
-        interactionSource = interactionSource,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-        ),
-        // Hilangkan shadow elevation
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 0.dp,
-            pressedElevation = 0.dp
-        ),
+        interactionSource = interaction,
+        shape = morphShape(t, top, top, bottom, bottom),
+        colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp, pressedElevation = 0.dp),
         modifier = modifier
             .fillMaxWidth()
-            .height(108.dp)
+            .graphicsLayer {
+                val s = 1f - 0.03f * t
+                scaleX = s
+                scaleY = s
+            }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 10.dp, end = 14.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Surface(
+                shape = expressiveShape(index),
+                color = style.fill,
+                modifier = Modifier.size(50.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = item.iconRes,
+                        contentDescription = null,
+                        tint = style.onFill,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.title.replace("\n", " "),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = scheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                val desc = menuDescription(item.title)
+                if (desc.isNotEmpty()) {
+                    Text(
+                        text = desc,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = scheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            if (trailing != null) {
+                trailing()
+            } else {
+                Surface(
+                    shape = CircleShape,
+                    color = scheme.surfaceContainerHighest,
+                    modifier = Modifier.size(34.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Rounded.ArrowOutward,
+                            contentDescription = null,
+                            tint = scheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// =====================================================================
+//  MOTION — token gerak Material 3 Expressive (spring-based)
+// =====================================================================
+private object ExpressiveMotion {
+    fun <T> fastSpatial() = spring<T>(dampingRatio = 0.6f, stiffness = 800f)
+    fun <T> spatial() = spring<T>(dampingRatio = 0.8f, stiffness = 380f)
+    fun <T> effects() = spring<T>(dampingRatio = 1f, stiffness = 1600f)
+    fun <T> fastEffects() = spring<T>(dampingRatio = 1f, stiffness = 3800f)
+
+    /** Untuk animasi ukuran layout: critically damped agar tidak pernah negatif. */
+    fun <T> size() = spring<T>(dampingRatio = 1f, stiffness = 380f)
+}
+
+/** Muncul bertahap: fade + naik + membesar dengan spring, tertunda per indeks. */
+@Composable
+private fun Modifier.staggeredEntrance(index: Int, delayPerItemMs: Long = 45L): Modifier {
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(Unit) {
+        delay(index * delayPerItemMs)
+        progress.animateTo(1f, ExpressiveMotion.spatial())
+    }
+    return this.graphicsLayer {
+        val p = progress.value
+        alpha = p.coerceIn(0f, 1f)
+        translationY = (1f - p) * 40.dp.toPx()
+        val s = 0.94f + 0.06f * p
+        scaleX = s
+        scaleY = s
+    }
+}
+
+/**
+ * Bentuk ekspresif (menggantikan M3 Shapes Experimental)
+ * Memanfaatkan sudut asimetris untuk desain organik
+ */
+@Composable
+private fun expressiveShape(index: Int): Shape = when (index % 6) {
+    0 -> RoundedCornerShape(topStart = 24.dp, bottomEnd = 24.dp)
+    1 -> RoundedCornerShape(16.dp)
+    2 -> RoundedCornerShape(topEnd = 24.dp, bottomStart = 24.dp)
+    3 -> CutCornerShape(16.dp)
+    4 -> RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 24.dp, bottomEnd = 24.dp)
+    else -> CircleShape
+}
+
+private fun initialsOf(name: String): String =
+    name.trim().split(Regex("\\s+"))
+        .filter { it.isNotBlank() }
+        .take(2)
+        .mapNotNull { word -> word.firstOrNull { it.isLetter() }?.uppercaseChar() }
+        .joinToString("")
+
+// =====================================================================
+//  APP BAR AVATAR + CHIP IDENTITAS
+// =====================================================================
+
+@Composable
+private fun ProfileAvatarButton(
+    namaLengkap: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.88f else 1f,
+        animationSpec = ExpressiveMotion.fastSpatial(),
+        label = "avatarScale"
+    )
+    val initials = remember(namaLengkap) { initialsOf(namaLengkap) }
+
+    Surface(
+        onClick = onClick,
+        interactionSource = interaction,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.primary,
+        contentColor = MaterialTheme.colorScheme.onPrimary,
+        modifier = modifier
+            .size(48.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 6.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                modifier = Modifier.size(46.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = item.iconRes,
-                        contentDescription = item.title,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+        Box(contentAlignment = Alignment.Center) {
+            if (initials.isNotEmpty()) {
+                Text(
+                    text = initials,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            } else {
+                Icon(Icons.Rounded.Person, contentDescription = "Profil", modifier = Modifier.size(24.dp))
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = item.title,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                lineHeight = 14.sp
-            )
         }
     }
 }
 
-/**
- * Material 3 Expressive Profile Bottom Sheet:
- * User Details, NIP, Roles, Edit Profile button, and Logout trigger.
- */
-@OptIn(ExperimentalMaterial3Api::class)
+// =====================================================================
+//  BOTTOM SHEET PROFIL
+// =====================================================================
+
+private data class InfoRowSpec(val icon: ImageVector, val label: String, val value: String)
+
+/** Daftar "grouped": item pertama/terakhir bersudut besar, di tengah bersudut kecil. */
+private fun groupedShape(index: Int, count: Int): Shape {
+    val big = 24.dp
+    val small = 6.dp
+    return when {
+        count == 1 -> RoundedCornerShape(big)
+        index == 0 -> RoundedCornerShape(big, big, small, small)
+        index == count - 1 -> RoundedCornerShape(small, small, big, big)
+        else -> RoundedCornerShape(small)
+    }
+}
+
 @Composable
 fun ProfileBottomSheet(
     namaLengkap: String,
@@ -1266,117 +1719,171 @@ fun ProfileBottomSheet(
     onEditProfile: () -> Unit,
     onPromptLogout: () -> Unit
 ) {
+    val scheme = MaterialTheme.colorScheme
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val initials = remember(namaLengkap) { initialsOf(namaLengkap) }
+
+    val infinite = rememberInfiniteTransition(label = "avatar")
+    val spin by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(tween(30_000, easing = LinearEasing)),
+        label = "avatarSpin"
+    )
+
+    val rows = buildList {
+        val jabatan = listOf(status, jenis).filter { it.isNotBlank() }.joinToString(" - ").ifBlank { "-" }
+        add(InfoRowSpec(Icons.Rounded.Work, "Jabatan / Profesi", jabatan))
+        if (username.isNotBlank()) add(InfoRowSpec(Icons.Rounded.AlternateEmail, "Username", "@$username"))
+        if (walikelas.isNotBlank() && walikelas != "XXXX") add(InfoRowSpec(Icons.Rounded.Class, "Wali Kelas", walikelas))
+        if (role.isNotBlank()) {
+            add(InfoRowSpec(Icons.Rounded.VerifiedUser, "Hak Akses", role.replaceFirstChar { it.uppercase() }))
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-        containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+        shape = RoundedCornerShape(topStart = 36.dp, topEnd = 36.dp),
+        containerColor = scheme.surfaceContainerLow
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
+                .padding(horizontal = 20.dp, vertical = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Large Avatar Ring
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                border = BorderStroke(2.dp, MaterialTheme.colorScheme.primary),
-                shadowElevation = 4.dp,
-                modifier = Modifier.size(80.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.size(108.dp).staggeredEntrance(0)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { rotationZ = spin }
+                        .background(scheme.primaryContainer, RoundedCornerShape(32.dp))
+                )
+                if (initials.isNotEmpty()) {
+                    Text(
+                        text = initials,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = scheme.onPrimaryContainer
+                    )
+                } else {
                     Icon(
                         painter = painterResource(id = R.drawable.icm_person),
                         contentDescription = "Avatar",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(44.dp)
+                        tint = scheme.onPrimaryContainer,
+                        modifier = Modifier.size(48.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = namaLengkap.ifBlank { "Pegawai E-Smansa" },
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                textAlign = TextAlign.Center
+                color = scheme.onSurface,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.staggeredEntrance(1)
             )
 
             if (nip.isNotBlank() && nip != "-") {
                 Text(
                     text = "NIP. $nip",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
+                    color = scheme.onSurfaceVariant,
+                    modifier = Modifier.staggeredEntrance(2)
                 )
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // User Info Detail Card
-            OutlinedCard(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.outlinedCardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
-                ),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    ProfileInfoRow(label = "Jabatan / Profesi", value = "$status - $jenis")
-                    if (username.isNotBlank()) {
-                        ProfileInfoRow(label = "Username", value = "@$username")
-                    }
-                    if (walikelas.isNotBlank() && walikelas != "XXXX") {
-                        ProfileInfoRow(label = "Wali Kelas", value = walikelas)
-                    }
-                    if (role.isNotBlank()) {
-                        ProfileInfoRow(label = "Hak Akses", value = role.replaceFirstChar { it.uppercase() })
+                rows.forEachIndexed { index, row ->
+                    Surface(
+                        shape = groupedShape(index, rows.size),
+                        color = scheme.surfaceContainerHighest.copy(alpha = 0.6f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .staggeredEntrance(3 + index)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = scheme.secondaryContainer,
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        imageVector = row.icon,
+                                        contentDescription = null,
+                                        tint = scheme.onSecondaryContainer,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            Column {
+                                Text(
+                                    text = row.label,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = scheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = row.value,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = scheme.onSurface
+                                )
+                            }
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Action Buttons
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .staggeredEntrance(3 + rows.size),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 FilledTonalButton(
                     onClick = onEditProfile,
-                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
                         .weight(1f)
-                        .height(50.dp)
+                        .height(64.dp),
+                    shape = RoundedCornerShape(20.dp)
                 ) {
-                    Text(text = "Edit Profil", fontWeight = FontWeight.Bold)
+                    Icon(Icons.Rounded.Edit, contentDescription = null, modifier = Modifier.size(22.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Edit Profil", style = MaterialTheme.typography.labelLarge)
                 }
 
                 Button(
                     onClick = onPromptLogout,
-                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
                     ),
                     modifier = Modifier
                         .weight(1f)
-                        .height(50.dp)
+                        .height(64.dp),
+                    shape = RoundedCornerShape(20.dp)
                 ) {
-                    Text(text = "Logout", fontWeight = FontWeight.Bold)
+                    Icon(Icons.AutoMirrored.Rounded.Logout, contentDescription = null, modifier = Modifier.size(22.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Logout", style = MaterialTheme.typography.labelLarge)
                 }
             }
 
@@ -1385,98 +1892,80 @@ fun ProfileBottomSheet(
     }
 }
 
-@Composable
-fun ProfileInfoRow(label: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
+// =====================================================================
+//  DIALOG LOGOUT + FOOTER
+// =====================================================================
 
-/**
- * Material 3 Expressive Confirmation Dialog for Logout
- */
 @Composable
 fun LogoutConfirmDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val scheme = MaterialTheme.colorScheme
     AlertDialog(
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(32.dp),
+        icon = {
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = scheme.errorContainer,
+                modifier = Modifier.size(64.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.Logout,
+                        contentDescription = null,
+                        tint = scheme.onErrorContainer,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+            }
+        },
         title = {
             Text(
                 text = "Keluar dari Akun?",
                 style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
             )
         },
         text = {
             Text(
                 text = "Sesi Anda akan diakhiri dan data sesi login pada perangkat ini akan dihapus. Anda perlu memasukkan kredensial login kembali.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = scheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
             )
         },
         confirmButton = {
             Button(
                 onClick = onConfirm,
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                )
-            ) {
-                Text(text = "Ya, Logout", fontWeight = FontWeight.Bold)
-            }
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = scheme.error, contentColor = scheme.onError)
+            ) { Text(text = "Ya, Logout") }
         },
         dismissButton = {
-            TextButton(
-                onClick = onDismiss,
-                shape = RoundedCornerShape(14.dp)
-            ) {
-                Text(text = "Batal", fontWeight = FontWeight.SemiBold)
-            }
+            TextButton(onClick = onDismiss, shape = RoundedCornerShape(16.dp)) { Text(text = "Batal") }
         }
     )
 }
 
-/**
- * Expressive Footer displaying App Version and Copyright information
- */
 @Composable
-fun ExpressiveFooter(
-    modifier: Modifier = Modifier
-) {
+fun ExpressiveFooter(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f)
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh
         ) {
             Text(
                 text = stringResource(id = R.string.versiapp),
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
-                lineHeight = 16.sp,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 8.dp)
             )
         }
     }
@@ -1485,6 +1974,12 @@ fun ExpressiveFooter(
 // ==================== COMPOSE PREVIEWS ====================
 
 @Preview(name = "Dashboard Guru (Light)", showBackground = true, showSystemUi = true)
+@Preview(
+    name = "Dashboard Guru (Dark)",
+    showBackground = true,
+    showSystemUi = true,
+    uiMode = Configuration.UI_MODE_NIGHT_YES
+)
 @Composable
 fun MainDashboardGuruPreview() {
     AppTheme {

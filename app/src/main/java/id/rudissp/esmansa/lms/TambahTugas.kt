@@ -8,24 +8,82 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.provider.OpenableColumns
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.CheckedTextView
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Assignment
+import androidx.compose.material.icons.automirrored.rounded.MenuBook
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.rounded.AttachFile
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import id.rudissp.esmansa.AppConstants
+import id.rudissp.esmansa.AppTheme
+import id.rudissp.esmansa.LoadingIndicator
 import id.rudissp.esmansa.R
-import id.rudissp.esmansa.databinding.ActivityTambahTugasBinding
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -35,46 +93,33 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
-class TambahTugas : AppCompatActivity() {
-
-    private lateinit var binding: ActivityTambahTugasBinding
+class TambahTugas : ComponentActivity() {
 
     private lateinit var prefs: SharedPreferences
-
-    // Variabel penyimpan data
-    private var selectedDeadline: Calendar? = null
     private var selectedFileUri: Uri? = null
     private var cameraImageUri: Uri? = null
     private var cameraFileName: String = ""
-
     private var namaGuruLogin: String = ""
 
-    // Setup Adapter Kelas
-    private val listKelas = mutableListOf<KelasModel>()
-    private lateinit var kelasAdapter: KelasCheckboxAdapter
+    private val listKelasState = mutableStateListOf<KelasModel>()
+    private var isSavingState = mutableStateOf(false)
 
-    // Launcher untuk melampirkan file PDF/Gambar
     private val filePickerLauncher =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
             uri?.let {
                 selectedFileUri = it
-                contentResolver.takePersistableUriPermission(
-                    it,
-                    Intent.FLAG_GRANT_READ_URI_PERMISSION
-                )
-
-                val fileName = getFileName(it)
-                binding.tvNamaFile.text = fileName
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        it,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (_: Exception) {}
             }
         }
 
-    // Launcher BARU untuk Kamera
     private val takePictureLauncher =
         registerForActivityResult(ActivityResultContracts.TakePicture()) { isSuccess ->
-            if (isSuccess) {
-                selectedFileUri = cameraImageUri
-                binding.tvNamaFile.text = cameraFileName
-            } else {
+            if (!isSuccess) {
                 cameraImageUri = null
             }
         }
@@ -83,47 +128,67 @@ class TambahTugas : AppCompatActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         prefs = getSharedPreferences("PREFS", MODE_PRIVATE)
-        binding = ActivityTambahTugasBinding.inflate(layoutInflater)
-        setContentView(binding.root)
+        namaGuruLogin = prefs.getString("namalengkap", "") ?: ""
 
-        setupToolbar()
-        setupRecyclerView()
-        setupListeners()
-    }
+        fetchKelasDariDatabase()
 
-    private fun setupToolbar() {
-        binding.toolbar.setNavigationOnClickListener {
-            finish()
-        }
-
-        binding.toolbar.menu.findItem(R.id.menunya_update).isVisible = false
-
-        binding.toolbar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.menunya_simpan -> {
-                    validateAndSubmit()
-                    true
-                }
-
-                else -> false
+        setContent {
+            AppTheme {
+                TambahTugasScreen(
+                    listKelas = listKelasState,
+                    isSaving = isSavingState.value,
+                    onBackClick = { finish() },
+                    onSelectAllKelas = { select ->
+                        for (i in listKelasState.indices) {
+                            listKelasState[i] = listKelasState[i].copy(isSelected = select)
+                        }
+                    },
+                    onToggleKelas = { index ->
+                        val item = listKelasState[index]
+                        listKelasState[index] = item.copy(isSelected = !item.isSelected)
+                    },
+                    onPickFile = {
+                        val options = arrayOf("Ambil Foto (Kamera)", "Pilih File (Dokumen/Galeri)")
+                        AlertDialog.Builder(this)
+                            .setTitle("Pilih Lampiran")
+                            .setItems(options) { _, which ->
+                                when (which) {
+                                    0 -> openCamera()
+                                    1 -> filePickerLauncher.launch(arrayOf("application/pdf", "image/*"))
+                                }
+                            }
+                            .show()
+                    },
+                    onSubmit = { mapel, jenis, judul, deskripsi, isOnline, deadlineCal ->
+                        validateAndSubmit(mapel, jenis, judul, deskripsi, isOnline, deadlineCal)
+                    }
+                )
             }
         }
     }
 
-    private fun setupRecyclerView() {
-        // Inisialisasi adapter dengan list kosong terlebih dahulu
-        kelasAdapter = KelasCheckboxAdapter(listKelas)
-        binding.rvKelas.layoutManager = LinearLayoutManager(this)
-        binding.rvKelas.adapter = kelasAdapter
+    private fun openCamera() {
+        try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            cameraFileName = "FOTO_$timeStamp.jpg"
+            val storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+            val photoFile = File.createTempFile("FOTO_${timeStamp}_", ".jpg", storageDir)
 
-        // Ambil data kelas dari database
-        fetchKelasDariDatabase()
+            cameraImageUri = FileProvider.getUriForFile(
+                this,
+                "${applicationContext.packageName}.fileprovider",
+                photoFile
+            )
+            cameraImageUri?.let {
+                selectedFileUri = it
+                takePictureLauncher.launch(it)
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Gagal membuka kamera: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun fetchKelasDariDatabase() {
-        namaGuruLogin = prefs.getString("namalengkap", "").toString()
-
-
         val urlApi = AppConstants.GETKELAS
 
         val stringRequest = object : StringRequest(
@@ -133,17 +198,12 @@ class TambahTugas : AppCompatActivity() {
                     val jsonObject = JSONObject(response)
                     if (jsonObject.getString("status") == "success") {
                         val jsonArray = jsonObject.getJSONArray("data")
-
-                        listKelas.clear()
+                        listKelasState.clear()
 
                         for (i in 0 until jsonArray.length()) {
                             val item = jsonArray.getJSONObject(i)
-                            val idKelas = item.getString("id")
-                            val namaKelas = item.getString("namaKelas")
-                            listKelas.add(KelasModel(idKelas, namaKelas))
+                            listKelasState.add(KelasModel(item.getString("id"), item.getString("namaKelas")))
                         }
-
-                        kelasAdapter.notifyDataSetChanged()
                     } else {
                         Toast.makeText(this, "Tidak ada kelas", Toast.LENGTH_SHORT).show()
                     }
@@ -151,198 +211,101 @@ class TambahTugas : AppCompatActivity() {
                     e.printStackTrace()
                 }
             },
-            Response.ErrorListener { _ ->
+            Response.ErrorListener {
                 Toast.makeText(this, "Gagal koneksi ke server", Toast.LENGTH_SHORT).show()
-            }) {
+            }
+        ) {
             override fun getParams(): MutableMap<String, String> {
-                val params = HashMap<String, String>()
-                params["nama_guru"] = namaGuruLogin
-                return params
+                return hashMapOf("nama_guru" to namaGuruLogin)
             }
         }
         Volley.newRequestQueue(this).add(stringRequest)
-
     }
 
-    private fun setupListeners() {
-        // PERUBAHAN: Menampilkan Dialog Pilihan saat tombol diklik
-        binding.btnLampirkan.setOnClickListener {
-            val options = arrayOf("Ambil Foto (Kamera)", "Pilih File (Dokumen/Galeri)")
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle("Pilih Lampiran")
-            builder.setItems(options) { dialog, which ->
-                when (which) {
-                    0 -> openCamera() // Pilihan Kamera
-                    1 -> {
-                        // Pilihan File Manager
-                        val mimeTypes = arrayOf("application/pdf", "image/*")
-                        filePickerLauncher.launch(mimeTypes)
-                    }
-                }
-            }
-            builder.show()
-        }
-
-        binding.cbPilihSemua.setOnCheckedChangeListener { _, isChecked ->
-            kelasAdapter.selectAll(isChecked)
-        }
-
-        binding.pilihtanggalLms.setOnClickListener {
-            showDateTimePicker()
-        }
-    }
-
-    private fun openCamera() {
-        try {
-            // Membuat nama file yang unik berdasarkan waktu
-            val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(
-                Date()
-            )
-            cameraFileName = "FOTO_$timeStamp.jpg"
-
-            // Membuat file sementara di direktori aplikasi
-            val storageDir: File? = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-            val photoFile = File.createTempFile("FOTO_${timeStamp}_", ".jpg", storageDir)
-
-            // Mendapatkan URI yang aman melalui FileProvider
-            cameraImageUri = FileProvider.getUriForFile(
-                this,
-                "${applicationContext.packageName}.fileprovider",
-                photoFile
-            )
-
-
-            // Membuka aplikasi kamera bawaan HP
-            cameraImageUri?.let { takePictureLauncher.launch(it) }
-
-        } catch (e: Exception) {
-            Toast.makeText(this, "Gagal membuka kamera: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun showDateTimePicker() {
-        val currentCalendar = Calendar.getInstance()
-
-        DatePickerDialog(
-            this,
-            { _, year, month, day ->
-                TimePickerDialog(
-                    this,
-                    { _, hour, minute ->
-
-                        selectedDeadline = Calendar.getInstance()
-                        selectedDeadline?.set(year, month, day, hour, minute)
-
-                        // Menampilkan format: 25 Okt 2026, 23:59
-                        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
-                        binding.pilihtanggalLms.setText(sdf.format(selectedDeadline!!.time))
-
-                    },
-                    currentCalendar.get(Calendar.HOUR_OF_DAY),
-                    currentCalendar.get(Calendar.MINUTE),
-                    true
-                ).show()
-
-            },
-            currentCalendar.get(Calendar.YEAR),
-            currentCalendar.get(Calendar.MONTH),
-            currentCalendar.get(Calendar.DAY_OF_MONTH)
-        ).show()
-    }
-
-    private fun validateAndSubmit() {
-        val mapel = binding.mapelnya.text.toString().trim()
-        val judul = binding.tlmsJudul.text.toString().trim()
-        val deskripsi = binding.tlmsDeskripsi.text.toString().trim()
-        val isOnline = binding.switchOnline.isChecked
-        val kelasTerpilih = listKelas.filter { it.isSelected }
-
-        val jenisTugas = binding.jenisnya.text.toString().trim()
-
-        // Validasi
+    private fun validateAndSubmit(
+        mapel: String,
+        jenis: String,
+        judul: String,
+        deskripsi: String,
+        isOnline: Boolean,
+        deadlineCal: Calendar?
+    ) {
         if (mapel.isEmpty()) {
-            binding.mapelnya.error = "Pilih mapel"; return
+            Toast.makeText(this, "Pilih mapel", Toast.LENGTH_SHORT).show()
+            return
         }
         if (judul.isEmpty()) {
-            binding.tlmsJudul.error = "Isi judul"; return
+            Toast.makeText(this, "Isi judul tugas/materi", Toast.LENGTH_SHORT).show()
+            return
         }
-        if (jenisTugas.isEmpty()) {
-            binding.jenisnya.error = "Pilih jenis"; return
+        if (jenis.isEmpty()) {
+            Toast.makeText(this, "Pilih jenis", Toast.LENGTH_SHORT).show()
+            return
         }
+        val kelasTerpilih = listKelasState.filter { it.isSelected }
         if (kelasTerpilih.isEmpty()) {
-            Toast.makeText(this, "Pilih kelas", Toast.LENGTH_SHORT).show(); return
+            Toast.makeText(this, "Pilih minimal satu kelas target", Toast.LENGTH_SHORT).show()
+            return
         }
-        if (selectedDeadline == null) {
-            Toast.makeText(this, "Tentukan deadline", Toast.LENGTH_SHORT).show(); return
+        if (deadlineCal == null) {
+            Toast.makeText(this, "Tentukan tenggat waktu (deadline)", Toast.LENGTH_SHORT).show()
+            return
         }
 
         val sdfDb = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-        val deadlineString = sdfDb.format(selectedDeadline!!.time)
+        val deadlineString = sdfDb.format(deadlineCal.time)
 
-        // Ubah list id kelas menjadi JSON Array String (agar mudah ditangkap PHP)
         val kelasArray = JSONArray()
         kelasTerpilih.forEach { kelasArray.put(it.id) }
         val kelasJsonString = kelasArray.toString()
 
+        isSavingState.value = true
         val urlApi = AppConstants.SIMPAN_TUGAS
-
-        // Tampilkan loading (opsional)
-        Toast.makeText(this, "Menyimpan data...", Toast.LENGTH_SHORT).show()
 
         val multipartRequest = object : VolleyMultipartRequest(
             Method.POST, urlApi,
             Response.Listener { response ->
+                isSavingState.value = false
                 val resultResponse = String(response.data)
                 try {
                     val jsonObject = JSONObject(resultResponse)
                     if (jsonObject.getString("status") == "success") {
-                        Toast.makeText(
-                            this@TambahTugas,
-                            "Tugas Berhasil Disimpan!",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        finish() // Tutup activity setelah berhasil
+                        Toast.makeText(this, "Tugas Berhasil Disimpan!", Toast.LENGTH_LONG).show()
+                        finish()
                     } else {
-                        Toast.makeText(
-                            this@TambahTugas,
-                            "Gagal: ${jsonObject.getString("message")}",
-                            Toast.LENGTH_LONG
-                        ).show()
+                        Toast.makeText(this, "Gagal: ${jsonObject.optString("message")}", Toast.LENGTH_LONG).show()
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    Toast.makeText(this@TambahTugas, "Response error", Toast.LENGTH_SHORT)
-                        .show()
+                    Toast.makeText(this, "Response error", Toast.LENGTH_SHORT).show()
                 }
             },
-            Response.ErrorListener { error ->
-                Toast.makeText(this@TambahTugas, "Network Error", Toast.LENGTH_SHORT).show()
-            }) {
-
-            // 1. Mengirim Data Teks
+            Response.ErrorListener {
+                isSavingState.value = false
+                Toast.makeText(this, "Network Error", Toast.LENGTH_SHORT).show()
+            }
+        ) {
             override fun getParams(): MutableMap<String, String> {
-                val params = HashMap<String, String>()
-                params["jenis"] = jenisTugas
-                params["mapel"] = mapel
-                params["judul"] = judul
-                params["deskripsi"] = deskripsi
-                params["is_online"] = if (isOnline) "1" else "0"
-                params["deadline"] = deadlineString
-                params["nama_guru"] = namaGuruLogin
-                params["kelas_array"] = kelasJsonString
-                return params
+                return hashMapOf(
+                    "jenis" to jenis,
+                    "mapel" to mapel,
+                    "judul" to judul,
+                    "deskripsi" to deskripsi,
+                    "is_online" to if (isOnline) "1" else "0",
+                    "deadline" to deadlineString,
+                    "nama_guru" to namaGuruLogin,
+                    "kelas_array" to kelasJsonString
+                )
             }
 
-            // 2. Mengirim File (Jika ada)
             override fun getByteData(): Map<String, DataPart>? {
                 val params = HashMap<String, DataPart>()
                 if (selectedFileUri != null) {
                     try {
-                        val inputStream: InputStream? =
-                            contentResolver.openInputStream(selectedFileUri!!)
+                        val inputStream: InputStream? = contentResolver.openInputStream(selectedFileUri!!)
                         val fileBytes = inputStream?.readBytes()
                         if (fileBytes != null) {
-                            val fileName = binding.tvNamaFile.text.toString()
+                            val fileName = getFileName(selectedFileUri!!)
                             params["file_lampiran"] = DataPart(
                                 fileName,
                                 fileBytes,
@@ -382,13 +345,7 @@ class TambahTugas : AppCompatActivity() {
         }
         return result ?: "File_Terlampir"
     }
-
-
 }
-
-// ==========================================
-// DATA CLASS & ADAPTER
-// ==========================================
 
 data class KelasModel(
     val id: String,
@@ -396,38 +353,479 @@ data class KelasModel(
     var isSelected: Boolean = false
 )
 
-class KelasCheckboxAdapter(private val list: List<KelasModel>) :
-    RecyclerView.Adapter<KelasCheckboxAdapter.ViewHolder>() {
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TambahTugasScreen(
+    listKelas: List<KelasModel>,
+    isSaving: Boolean,
+    onBackClick: () -> Unit,
+    onSelectAllKelas: (Boolean) -> Unit,
+    onToggleKelas: (Int) -> Unit,
+    onPickFile: () -> Unit,
+    onSubmit: (
+        mapel: String,
+        jenis: String,
+        judul: String,
+        deskripsi: String,
+        isOnline: Boolean,
+        deadline: Calendar?
+    ) -> Unit
+) {
+    val context = LocalContext.current
+    val scrollState = rememberScrollState()
 
-    class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
-        // PERBAIKAN: Ubah CheckBox menjadi CheckedTextView
-        val cb: CheckedTextView = view.findViewById(android.R.id.text1)
+    var mapelName by remember { mutableStateOf("") }
+    var jenisName by remember { mutableStateOf("") }
+    var judulStr by remember { mutableStateOf("") }
+    var deskripsiStr by remember { mutableStateOf("") }
+    var isOnline by remember { mutableStateOf(true) }
+    var deadlineCalendar by remember { mutableStateOf<Calendar?>(null) }
+    var deadlineDisplay by remember { mutableStateOf("") }
+
+    var expandedMapelMenu by remember { mutableStateOf(false) }
+    var expandedJenisMenu by remember { mutableStateOf(false) }
+
+    val listMapel = stringArrayResource(id = R.array.mapelnya).toList()
+    val listJenis = stringArrayResource(id = R.array.jenistugas).toList()
+
+    val allSelected = listKelas.isNotEmpty() && listKelas.all { it.isSelected }
+
+    fun showDateTimePicker() {
+        val currentCalendar = Calendar.getInstance()
+        DatePickerDialog(
+            context,
+            { _, year, month, day ->
+                TimePickerDialog(
+                    context,
+                    { _, hour, minute ->
+                        val cal = Calendar.getInstance().apply {
+                            set(year, month, day, hour, minute)
+                        }
+                        deadlineCalendar = cal
+                        val sdf = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.getDefault())
+                        deadlineDisplay = sdf.format(cal.time)
+                    },
+                    currentCalendar.get(Calendar.HOUR_OF_DAY),
+                    currentCalendar.get(Calendar.MINUTE),
+                    true
+                ).show()
+            },
+            currentCalendar.get(Calendar.YEAR),
+            currentCalendar.get(Calendar.MONTH),
+            currentCalendar.get(Calendar.DAY_OF_MONTH)
+        ).show()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val v = LayoutInflater.from(parent.context)
-            .inflate(android.R.layout.simple_list_item_multiple_choice, parent, false)
-        return ViewHolder(v)
-    }
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Buat Tugas / Materi",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Tutup"
+                        )
+                    }
+                },
+                actions = {
+                    Button(
+                        onClick = {
+                            onSubmit(mapelName, jenisName, judulStr, deskripsiStr, isOnline, deadlineCalendar)
+                        },
+                        enabled = !isSaving && mapelName.isNotBlank() && judulStr.isNotBlank() && jenisName.isNotBlank(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.padding(end = 12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(text = "Simpan", fontWeight = FontWeight.Bold)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLowest
+                )
+            )
+        }
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(MaterialTheme.colorScheme.surface)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // 1. Mapel Selector
+                ExposedDropdownMenuBox(
+                    expanded = expandedMapelMenu,
+                    onExpandedChange = { expandedMapelMenu = !expandedMapelMenu }
+                ) {
+                    OutlinedTextField(
+                        value = mapelName,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Mata Pelajaran") },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Rounded.MenuBook, contentDescription = null) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedMapelMenu) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                        shape = RoundedCornerShape(16.dp)
+                    )
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = list[position]
-        holder.cb.text = item.namaKelas
-        holder.cb.isChecked = item.isSelected
+                    ExposedDropdownMenu(
+                        expanded = expandedMapelMenu,
+                        onDismissRequest = { expandedMapelMenu = false }
+                    ) {
+                        listMapel.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(item) },
+                                onClick = {
+                                    mapelName = item
+                                    expandedMapelMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
 
-        // Memastikan state tersimpan saat baris diklik dan UI langsung diperbarui
-        holder.cb.setOnClickListener {
-            item.isSelected = !item.isSelected
-            holder.cb.isChecked = item.isSelected // Update centang di layar
+                // 2. Jenis Selector
+                ExposedDropdownMenuBox(
+                    expanded = expandedJenisMenu,
+                    onExpandedChange = { expandedJenisMenu = !expandedJenisMenu }
+                ) {
+                    OutlinedTextField(
+                        value = jenisName,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Jenis (Penugasan / Materi)") },
+                        leadingIcon = { Icon(Icons.AutoMirrored.Rounded.Assignment, contentDescription = null) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedJenisMenu) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expandedJenisMenu,
+                        onDismissRequest = { expandedJenisMenu = false }
+                    ) {
+                        listJenis.forEach { item ->
+                            DropdownMenuItem(
+                                text = { Text(item) },
+                                onClick = {
+                                    jenisName = item
+                                    expandedJenisMenu = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // 3. Judul Field
+                OutlinedTextField(
+                    value = judulStr,
+                    onValueChange = { judulStr = it },
+                    label = { Text("Judul Tugas / Materi") },
+                    placeholder = { Text("Contoh: Tugas Bab 1 Aljabar") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                )
+
+                // 4. Deskripsi Field
+                OutlinedTextField(
+                    value = deskripsiStr,
+                    onValueChange = { deskripsiStr = it },
+                    label = { Text("Deskripsi atau Isi Materi") },
+                    placeholder = { Text("Tuliskan instruksi atau ringkasan materi...") },
+                    minLines = 3,
+                    maxLines = 6,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp)
+                )
+
+                // 5. Attachment Section
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Lampiran File / Foto",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Opsional (PDF atau Gambar)",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        Button(
+                            onClick = onPickFile,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Icon(Icons.Rounded.AttachFile, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Pilih File")
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // 6. Kelas Target Section
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Pilih Kelas Target",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Checkbox(
+                                checked = allSelected,
+                                onCheckedChange = { onSelectAllKelas(it) }
+                            )
+                            Text(
+                                text = "Pilih Semua",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    // Kelas Checkboxes Surface
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(8.dp)
+                        ) {
+                            listKelas.forEachIndexed { index, kelas ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { onToggleKelas(index) }
+                                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = kelas.namaKelas,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                    Checkbox(
+                                        checked = kelas.isSelected,
+                                        onCheckedChange = { onToggleKelas(index) }
+                                    )
+                                }
+                                if (index < listKelas.size - 1) {
+                                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+
+                // 7. Switch Wajib Pengumpulan Online
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Wajib Pengumpulan Online",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Siswa wajib mengunggah file jawaban",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = isOnline,
+                            onCheckedChange = { isOnline = it }
+                        )
+                    }
+                }
+
+                // 8. Deadline Field
+                OutlinedTextField(
+                    value = deadlineDisplay,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Tenggat Waktu (Deadline)") },
+                    placeholder = { Text("Pilih tanggal dan waktu...") },
+                    leadingIcon = { Icon(Icons.Default.CalendarToday, contentDescription = null) },
+                    trailingIcon = {
+                        IconButton(onClick = { showDateTimePicker() }) {
+                            Icon(Icons.Default.CalendarToday, contentDescription = "Pilih Tanggal")
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDateTimePicker() },
+                    shape = RoundedCornerShape(16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Submit Button at bottom
+                Button(
+                    onClick = {
+                        onSubmit(mapelName, jenisName, judulStr, deskripsiStr, isOnline, deadlineCalendar)
+                    },
+                    enabled = !isSaving && mapelName.isNotBlank() && judulStr.isNotBlank() && jenisName.isNotBlank(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
+                    Icon(imageVector = Icons.Rounded.Check, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Simpan Tugas / Materi",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+            }
+
+            // Loading Overlay when saving
+            if (isSaving) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.padding(24.dp)
+                        ) {
+                            val infiniteTransition = rememberInfiniteTransition(label = "saving infinite transition")
+                            val animatedProgress = infiniteTransition.animateFloat(
+                                initialValue = 0f,
+                                targetValue = 1f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(200, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse
+                                ),
+                                label = "saving progress"
+                            )
+
+                            Surface(
+                                shape = RoundedCornerShape(24.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                tonalElevation = 4.dp,
+                                modifier = Modifier.size(80.dp)
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    LoadingIndicator(
+                                        progress = { animatedProgress.value },
+                                        modifier = Modifier.size(46.dp),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(20.dp))
+
+                            Text(
+                                text = "Menyimpan tugas / materi...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
+}
 
-    override fun getItemCount(): Int = list.size
-
-    fun selectAll(select: Boolean) {
-        for (item in list) {
-            item.isSelected = select
-        }
-        notifyDataSetChanged()
+@Preview(showBackground = true)
+@Composable
+fun TambahTugasScreenPreview() {
+    AppTheme {
+        val mockKelas = listOf(
+            KelasModel("1", "X 1", true),
+            KelasModel("2", "X 2", false),
+            KelasModel("3", "XI 1", false)
+        )
+        TambahTugasScreen(
+            listKelas = mockKelas,
+            isSaving = false,
+            onBackClick = {},
+            onSelectAllKelas = {},
+            onToggleKelas = {},
+            onPickFile = {},
+            onSubmit = { _, _, _, _, _, _ -> }
+        )
     }
 }

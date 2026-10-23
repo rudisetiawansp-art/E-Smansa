@@ -14,7 +14,7 @@ import id.rudissp.esmansa.R
 import id.rudissp.esmansa.ZoomClass
 import androidx.core.graphics.toColorInt
 
-class Full : AppCompatActivity() {
+class ull : AppCompatActivity() {
 
     lateinit var prefs: SharedPreferences
 

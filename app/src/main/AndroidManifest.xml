@@ -33,6 +33,7 @@
             android:exported="false" />
         <activity
             android:name=".jadwal.JadwalV2"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".pantau.Pantau"
